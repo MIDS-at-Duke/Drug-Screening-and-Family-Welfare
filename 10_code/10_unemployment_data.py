@@ -11,7 +11,7 @@ import janitor
 ##############
 
 df = pd.read_csv(
-    "/Users/samsloate/Desktop/720_Data_Science/Policy-Stats-Team/00_source_data/unemployment_data/monthly_state_unemployment_data.txt",
+    "https://raw.githubusercontent.com/MIDS-at-Duke/Policy-Stats-Team/master/00_source_data/unemployment_data/monthly_state_unemployment_data.txt?token=ARFW6VYNW3UB54B7WDFVLPDANZJS6",
     sep="\t",
 )
 
@@ -49,11 +49,11 @@ df = pd.melt(
 
 # Put date column in to DateTime
 df[["month", "year"]] = df.date.str.split("_", expand=True)
-df['date'] = pd.to_datetime(df['month'].astype(str)  + df['year'], format='%b%Y')
+df["date"] = pd.to_datetime(df["month"].astype(str) + df["year"], format="%b%Y")
 
-#drop anything after 2020
+# drop anything after 2020
 df.year = df.year.astype(int)
-df = df[df.year<=2020]
+df = df[df.year <= 2020]
 
 ##############
 # Other Cleaning
@@ -63,18 +63,23 @@ df = df[df.year<=2020]
 
 df["unemp_rate"] = df["unemp_rate"].str[0:3]
 
-df["unemp_rate"] = pd.to_numeric(df.unemp_rate, errors='coerce') # make number not string
+df["unemp_rate"] = pd.to_numeric(
+    df.unemp_rate, errors="coerce"
+)  # make number not string
 
 # Drop NA and extra columns
 
 df.dropna(inplace=True)
-df = df[['state', 'date', 'unemp_rate']]
+df = df[["state", "date", "unemp_rate"]]
 
 ##############
-#Save
+# Save
 ##############
 
-df.to_csv("/Users/samsloate/Desktop/720_Data_Science/Policy-Stats-Team/20_intermediate_data/unemployment_rate_clean.csv",
+# Change file to local path
+
+df.to_csv(
+    "/Users/samsloate/Desktop/720_Data_Science/Policy-Stats-Team/20_intermediate_data/unemployment_rate_clean.csv",
     index=False,
 )
 
