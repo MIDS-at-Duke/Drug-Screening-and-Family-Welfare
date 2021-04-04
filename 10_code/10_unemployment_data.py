@@ -72,6 +72,13 @@ df["unemp_rate"] = pd.to_numeric(
 df.dropna(inplace=True)
 df = df[["state", "date", "unemp_rate"]]
 
+# Make Month/Year columns in case needed
+df["year"] = pd.DatetimeIndex(df["date"]).year
+df["month"] = pd.DatetimeIndex(df["date"]).month
+
+# Reorder
+df = df[['state', 'date', 'year', 'month', 'unemp_rate']].sort_values(['state', "year", "month"])
+
 ##############
 # Save
 ##############
