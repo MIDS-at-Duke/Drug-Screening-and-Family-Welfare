@@ -1,0 +1,11 @@
+2011_15months_tan.xls filter=lfs diff=lfs merge=lfs -text
+2012_15months_tan.xls filter=lfs diff=lfs merge=lfs -text
+2013_15months_tan.xls filter=lfs diff=lfs merge=lfs -text
+2014_15months_tan.xls filter=lfs diff=lfs merge=lfs -text
+2015_15months_tan.xls filter=lfs diff=lfs merge=lfs -text
+2016_15months_tan.xls filter=lfs diff=lfs merge=lfs -text
+2010_15months_tan.xls filter=lfs diff=lfs merge=lfs -text
+2020_15months_tan.xlsx filter=lfs diff=lfs merge=lfs -text
+2017_15months_tan.xlsx filter=lfs diff=lfs merge=lfs -text
+2018_15months_tan.xlsx filter=lfs diff=lfs merge=lfs -text
+2019_15months_tan.xlsx filter=lfs diff=lfs merge=lfs -text
