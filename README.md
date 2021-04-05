@@ -2,7 +2,7 @@
 Unifying Data Science | Spring 2021
 
 ## Topic
-Our project seeks to investigate the relationship between state drug screening policies and the rate of applications for public assistance (TANF)
+Our project seeks to investigate the relationship between state drug screening policies and the rate of applications for public assistance (TANF).
 
 ## Motivation
 In recent years, 15 state welfare offices have implemented drug screening questionnaires for those applying for public assistance (TANF). While suspicionless testing has been ruled unconstitutional, these questionnaires are used to determine probable suspicion. Should an applicant be suspected of drug use, they are required to take a drug test before receiving welfare. A positive welfare test can trigger a referral to a substance use disorder treatment program, temporary disqualification from benefits, or a child services investigation, depending on the state.
