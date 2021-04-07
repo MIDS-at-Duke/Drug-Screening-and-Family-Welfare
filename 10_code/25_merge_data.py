@@ -90,7 +90,7 @@ for i in range(len(drug_states)):
 
     
 # Reorder Columns
-df = df[['state', 'year', 'month', 'datetime', 'population', 'num_below_fpl', "tanf_fams", "percap_num_below_fpl", "percap_tanf_fams", "drug_law", "days_from_policy"]]
+df = df[['state', 'year', 'month', 'datetime', 'population', 'num_below_fpl', "tanf_fams", "percap_num_below_fpl", "unemp_rate", "percap_tanf_fams", "drug_law", "days_from_policy"]]
 
 ################################
 # Save
