@@ -31,12 +31,9 @@ A treatment variable that indicates whether or not that state implemented a TANF
 - The outcome variable of the average number of families on TANF per state in a given calendar year.
 - State fixed effects.
 - Relevant covariates:
-- Racial demographics in the state
-- State unemployment rate
-- Percent of people in the state below the federal poverty level
-- Education level in the state
-- Potentially more covariates as we continue our initial research in the
-coming weeks
++ State unemployment rate
++ Percent of people in the state below the federal poverty level
+
 
 ## Data Sources
 ### Number of families on TANF a. Source: ACF
