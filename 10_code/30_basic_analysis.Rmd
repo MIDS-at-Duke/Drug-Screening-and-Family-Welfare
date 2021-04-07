@@ -1,0 +1,65 @@
+```{r}
+##############
+# Load R libraries
+##############
+library (zoo)
+library (stargazer)
+library(sandwich)
+library("lmtest")
+library(plm)
+
+##############
+# Read in data 
+##############
+
+setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifying DS/project/Policy-Stats-Team/20_intermediate_data")
+final<-read.csv("final_dataset_clean.csv")
+head(final)
+
+##############
+# Basic analysis
+##############
+
+# Regression
+summary(basic<-lm(percap_tanf_fams ~ drug_law + percap_num_below_fpl + unemp_rate + (state) + (year),data=final))
+
+# Cluster standard errors
+
+G <- length(unique(final$state))
+c <- G/(G - 1)
+coeftest(basic,c * vcovHC(basic, type = "HC1", cluster = "group"))
+
+# Preliminaries for table design
+robust.order <- c("drug_law", "percap_num_below_fpl", "unemp_rate",  "^Constant$") 
+
+robust.label =  c( "Drug Law (1=yes/0=no)",
+                   "Unemployment Rate (in %)",
+                   "Number Below Federal Poverty Level (per capita)") 
+
+stargazer(basic,
+          title="Table 1. Basic Analysis - TANF Rate per capita", 
+          type = 'html', 
+          out = "table1.html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          order=paste0("^", robust.order , "$"), 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="",
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
+          "TANF rate standardized to per capita."),
+          summary.stat=("n"))
+
+
+##############
+# Save
+##############
+
+
+print("done")
+
+```
