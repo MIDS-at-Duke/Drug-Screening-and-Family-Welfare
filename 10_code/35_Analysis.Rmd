@@ -1,0 +1,186 @@
+---
+title: "Analysis"
+date: "4/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(dplyr)
+library(zoo)
+library(stargazer)
+library(sandwich)
+library(lmtest)
+library(plm)
+library(raster)
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+library(maps)
+library(mapproj)
+```
+
+```{r, results = F, message = F, warning = F}
+setwd('C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/20_intermediate_data')
+final<-read.csv("final_dataset_clean.csv")
+```
+
+```{r}
+Rang1 <- seq(2001, 2019, 1)
+final <- final %>% filter(year %in% Rang1)
+head(final)
+```
+
+```{r}
+dim(final)
+```
+# Exploratory Data Analysis. 
+
+### Missing Data. 
+
+```{r, warning = F, message = F, echo = F}
+#Missing variables.
+#Code is taken from https://jenslaufer.com/data/analysis/visualize_missing_values_with_ggplot.html (for the subsequent three visualizations).  
+MISSINGVALS <- final %>%
+    gather(key = "key", value = "val") %>%
+    mutate(is.missing = is.na(val)) %>%
+    group_by(key, is.missing) %>%
+    summarise(num.missing = n()) %>%
+    filter(is.missing == T) %>%
+    dplyr::select(-is.missing) %>%
+    arrange(desc(num.missing))
+```
+
+```{r}
+MISSINGVALS
+```
+
+```{r, warning = F, message = F, fig.height = 3, fig.width = 12}
+#Generate a data frame of the percentage of missing values by variable. 
+missing.values <- final %>%
+  gather(key = "key", value = "val") %>%
+  mutate(isna = is.na(val)) %>%
+  group_by(key) %>%
+  mutate(total = n()) %>%
+  group_by(key, total, isna) %>%
+  summarise(num.isna = n()) %>%
+  mutate(pct = num.isna / total * 100)
+
+levels <- (missing.values  %>% filter(isna == T) %>% arrange(desc(pct)))$key
+
+#Visualize! 
+percent_missing <- missing.values %>%
+      ggplot() +
+  geom_bar(aes(x = reorder(key, desc(pct)), 
+                     y = pct, fill=isna), 
+                 stat = 'identity', alpha=0.8) +
+      scale_x_discrete(limits = levels) +
+      scale_fill_manual(name = "", 
+                        values = c('steelblue', 'navy'), labels = c("Recorded", "Missing")) +
+      coord_flip() +
+      labs(title = "Missing Values: Percentage of Variable", x =
+             'Variable', y = "Percentage of Missing Values") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+#Identify and visualize missing data by row. 
+missingbyrow <- final %>%
+  mutate(id = row_number()) %>%
+  gather(-id, key = "key", value = "val") %>%
+  mutate(isna = is.na(val)) %>%
+  ggplot(aes(key, id, fill = isna)) +
+    geom_raster(alpha=0.8) +
+    scale_fill_manual(name = "",
+        values = c('dodgerblue', 'gold'),
+        labels = c("Recorded", "Missing")) +
+    scale_x_discrete(limits = levels) +
+    labs(x = "Variable",
+           y = "Row Number", title = "Missing Values by Row") +
+    coord_flip() + theme(plot.title = element_text(hjust = 0.5))
+
+#Plot. 
+grid.arrange(percent_missing, missingbyrow, ncol = 2, nrow = 1)
+```
+
+```{r, warning = F, message = F}
+Plot1 <- ggplot(data = final, mapping = aes(x = year, y = num_below_fpl, color = state)) + geom_point() + geom_line() + theme(legend.position = "none") + labs(x = 'Year', y = "Number Below Federal Poverty Line", title = 'Number Below Federal Poverty Line by State') + theme(plot.title = element_text(hjust = 0.5))
+Plot1
+```
+
+```{r, warning = F, message = F}
+Plot2 <- ggplot(data = final, mapping = aes(x = year, y = unemp_rate, color = state)) + geom_point() + theme(legend.position = "none") + labs(x = 'Year', y = "Number Below Federal Poverty Line", title = 'Number Below Federal Poverty Line by State') + theme(plot.title = element_text(hjust = 0.5))
+Plot2
+```
+
+```{r}
+Policy <- final %>% filter(drug_law == 1)
+Policy_States <- unique(Policy$state)
+
+NoPol <- final %>% filter(drug_law == 0)
+NoPolicy_States <- unique(NoPol$state)
+```
+
+```{r}
+CapStr <- function(y) {
+  c <- strsplit(y, " ")[[1]]
+  paste(toupper(substring(c, 1,1)), substring(c, 2),
+      sep="", collapse=" ")
+}
+
+us_states <- map_data("state")
+us_states$region <- sapply(us_states$region, CapStr)
+
+IndList <- c()
+for (i in us_states$region) {
+  if (i %in% Policy_States){
+    IndList <- c(IndList, 1)
+  }
+  else {
+    IndList <- c(IndList, 0)
+  }
+}
+
+us_states$drug_law <- as.factor(IndList)
+head(us_states)
+```
+
+```{r}
+p <- ggplot(data = us_states,
+            aes(x = long, y = lat,
+                group = group, fill = drug_law)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'State Drug Law Enaction') + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(values = c('lightblue', 'navy'))
+p
+```
+
+## Case: West Virginia. 
+
+Control Region: Kentucky, Virginia, Pennsylvania, Ohio. 
+
+```{r}
+Region1 <- c('Kentucky', 'Pennsylvania', 'Ohio')
+
+R1 <- final %>% filter(state %in% Region1)
+
+WV <- final %>% filter(state == 'West Virginia')
+```
+
+```{r, message = F, warning = F}
+RegInit <- ggplot(WV, aes(x = datetime, y = percap_tanf_fams, group = 1)) + geom_line() + stat_smooth(
+  color = "#FC4E07", fill = "#FC4E07",
+  method = "lm"
+  )
+RegInit
+```
+
+```{r, message = F, warning = F}
+RegInit2 <- ggplot(R1, aes(x = datetime, y = percap_tanf_fams, group = 1)) + geom_line() + stat_smooth(
+  color = "#FC4E07", fill = "#FC4E07",
+  method = "lm"
+  )
+RegInit2
+```
+
+# Save
+
+```{r}
+print("done")
+```
+
