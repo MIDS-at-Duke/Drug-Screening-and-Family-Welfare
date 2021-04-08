@@ -39,11 +39,13 @@ robust.order <- c("drug_law", "percap_num_below_fpl", "unemp_rate",  "^Constant$
 robust.label =  c( "Drug Law (1=yes/0=no)",
                    "Unemployment Rate (in %)",
                    "Number Below Federal Poverty Level (per 100,000)") 
+setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifying DS/project/Policy-Stats-Team/30_results")
 
 stargazer(basic,
           title="Table 1. Basic Analysis - TANF Rate per capita", 
           type = 'html', 
           out = "table1.html",
+          file=OutPath,
           omit.stat=c("f", "ser"),
           style = "apsr", 
           order=paste0("^", robust.order , "$"), 
