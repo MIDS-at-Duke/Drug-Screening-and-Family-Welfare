@@ -21,7 +21,11 @@ head(final)
 ##############
 
 # Regression
-summary(basic<-lm(percap_tanf_fams ~ drug_law + percap_num_below_fpl + unemp_rate + (state) + (year),data=final))
+final$year_cat <- as.factor(final$year) # Duplicate the year variable as a factor for the FEs
+final$scale_tanf_fams <- final$percap_tanf_fams * 100000 # Scale the per capita tanf rate to 100,000 inhabitants
+final$scale_num_below_fpl <- final$percap_num_below_fpl * 100000 # Scale the per capita number below the federal poverty to 100,000 inhabitants
+
+summary(basic<-lm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate + (state) + (year_cat),data=final)) # We exclude a "post" indicator variable to reflect the period after the policy implementation for the aggregate analysis as the policy was implemented at different points in times for the different states, only include year for the time FE
 
 # Cluster standard errors
 
@@ -34,7 +38,7 @@ robust.order <- c("drug_law", "percap_num_below_fpl", "unemp_rate",  "^Constant$
 
 robust.label =  c( "Drug Law (1=yes/0=no)",
                    "Unemployment Rate (in %)",
-                   "Number Below Federal Poverty Level (per capita)") 
+                   "Number Below Federal Poverty Level (per 100,000)") 
 
 stargazer(basic,
           title="Table 1. Basic Analysis - TANF Rate per capita", 
@@ -51,7 +55,7 @@ stargazer(basic,
           covariate.labels =robust.label, 
           notes=c("Standard errors given in parentheses.",
           "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
-          "TANF rate standardized to per capita."),
+          "TANF rate scaled to 100,000 inhabitants."),
           summary.stat=("n"))
 
 
