@@ -202,9 +202,12 @@ head(us_states)
 ```
 
 ```{r}
+#BCD2CB (blueish) and #364C54 (dark muted green/blue) and #D7E8C4 (green) and dark grey
+Sam_Cols <- c("Blueish" = '#BCD2CB', 'DarkGreen' = '#364C54', 'Green' = '#D7E8C4')
+
 p <- ggplot(data = us_states,
             aes(x = long, y = lat,
-                group = group, fill = drug_law)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'State Drug Law Enaction') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'Policy Status', labels = c('No', 'Yes'), values = c('lightblue', 'navy'))
+                group = group, fill = drug_law)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'State Drug Law Enaction') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'Policy Status', labels = c('No', 'Yes'), values = c('#D7E8C4', '#364C54'))
 p
 ```
 
@@ -234,7 +237,7 @@ us_states$TNRegion <- as.factor(InterList)
 ```{r}
 pTN <- ggplot(data = us_states,
             aes(x = long, y = lat,
-                group = group, fill = TNRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'Tennessee and Control States') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Groups', labels = c('Tennessee', 'Control States', 'Non-Control States'), values = c('tomato', 'yellow', 'lightgray'))
+                group = group, fill = TNRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'Tennessee and Control States') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('Tennessee', 'Control States', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
 ```
 
 ```{r}
@@ -247,26 +250,26 @@ ControlPre <- R1 %>% filter(Date <= '2014-07-01')
 
 #Define breakpoint. 
 
-TNPost <- TN %>% filter(Date >= '2015-07-01')
-ControlPost <- R1 %>% filter(Date >= '2015-07-01')
+TNPost <- TN %>% filter(Date >= '2015-01-01')
+ControlPost <- R1 %>% filter(Date >= '2015-01-01')
 ```
 
 ```{r, warning = F, message = F}
-cols <- c("Tennessee" = "tomato", "Control Region" = "yellow")
+cols <- c("Tennessee" = '#364C54', "Control Region" = "#BCD2CB")
 RegInit <- ggplot() + stat_smooth(TNPre, mapping = aes(x = Date, y = Scaled_LogFam, fill = 'Tennessee', group = 1),
-  color = "darkred", size = 0.20,
-  method = "lm") + stat_smooth(TNPost, mapping = aes(x = Date, y = Scaled_LogFam, fill = 'Tennessee', group = 1),
-  color = "darkred", size = 0.20, 
-  method = "lm"
+  color = "darkgray", size = 0.20, alpha = 0.75, 
+  method = "loess") + stat_smooth(TNPost, mapping = aes(x = Date, y = Scaled_LogFam, fill = 'Tennessee', group = 1),
+  color = "darkgray", size = 0.20, alpha = 0.75,   
+  method = "loess"
   ) + stat_smooth(ControlPre, mapping = aes(x = Date, y = Scaled_LogFam, fill = 'Control Region', group = 1),
-  color = "darkred", size = 0.20,
-  method = "lm"
+  color = "darkgray", size = 0.20,
+  method = "loess"
   ) + geom_vline(xintercept = as.Date('2014-07-01'), linetype="dashed", 
-                color = "black", size=0.50) + geom_vline(xintercept = as.Date('2015-07-01'), linetype="dashed", 
+                color = "black", size=0.50) + geom_vline(xintercept = as.Date('2015-01-01'), linetype="dashed", 
                 color = "black", size=0.50) + stat_smooth(ControlPost, mapping = aes(x = Date, y = Scaled_LogFam, fill = 'Control Region', group = 1),
-  color = "darkred", size = 0.20, 
-  method = "lm"
-  ) + labs(x = 'Date', y = 'Percent of Families on TANF', title = 'Linear Time Trends for Percent of Families on TANF: \n Tennessee and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="Policy Status",values=cols)
+  color = "darkgray", size = 0.20, 
+  method = "loess"
+  ) + labs(x = 'Date', y = 'Percent of Families on TANF', title = 'Linear Time Trends for Percent of Families on TANF: \n Tennessee and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
 ```
 
 ```{r, fig.height = 3, fig.width = 12, warning = F, message = F}
@@ -300,7 +303,7 @@ us_states$NCRegion <- as.factor(InterList)
 ```{r}
 p <- ggplot(data = us_states,
             aes(x = long, y = lat,
-                group = group, fill = NCRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'North Carolina and Control States') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Groups', labels = c('North Carolina', 'Control States', 'Non-Control States'), values = c('tomato', 'yellow', 'lightgray'))
+                group = group, fill = NCRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'North Carolina and Control States') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('North Carolina', 'Control States', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
 ```
 
 
@@ -316,26 +319,26 @@ ControlPre <- R1 %>% filter(Date <= '2013-07-01')
 
 #Define breakpoint. 
 
-WVPost <- WV %>% filter(Date >= '2014-07-01')
-ControlPost <- R1 %>% filter(Date >= '2014-07-01')
+WVPost <- WV %>% filter(Date >= '2014-01-01')
+ControlPost <- R1 %>% filter(Date >= '2014-01-01')
 ```
 
 ```{r, message = F, warning = F}
-cols <- c("North Carolina" = "tomato", "Control Region" = "yellow")
+cols <- c("North Carolina" = '#364C54', "Control Region" = "#BCD2CB")
 RegInit <- ggplot() + stat_smooth(WVPre, mapping = aes(x = Date, y = Scaled_LogFam, fill = 'North Carolina', group = 1),
-  color = "darkred", size = 0.20,
-  method = "lm") + stat_smooth(WVPost, mapping = aes(x = Date, y = Scaled_LogFam, fill = 'North Carolina', group = 1),
-  color = "darkred", size = 0.20, 
-  method = "lm"
+  color = "darkgray", size = 0.20,
+  method = "loess") + stat_smooth(WVPost, mapping = aes(x = Date, y = Scaled_LogFam, fill = 'North Carolina', group = 1),
+  color = "darkgray", size = 0.20, 
+  method = "loess"
   ) + stat_smooth(ControlPre, mapping = aes(x = Date, y = Scaled_LogFam, fill = 'Control Region', group = 1),
-  color = "darkred", size = 0.20,
-  method = "lm"
+  color = "darkgray", size = 0.20,
+  method = "loess"
   ) + geom_vline(xintercept = as.Date('2013-07-01'), linetype="dashed", 
-                color = "black", size=0.50) + geom_vline(xintercept = as.Date('2014-07-01'), linetype="dashed", 
+                color = "black", size=0.50) + geom_vline(xintercept = as.Date('2014-01-01'), linetype="dashed", 
                 color = "black", size=0.50) + stat_smooth(ControlPost, mapping = aes(x = Date, y = Scaled_LogFam, fill = 'Control Region', group = 1),
-  color = "darkred", size = 0.20, 
-  method = "lm"
-  ) + labs(x = 'Date', y = 'Percent of Families on TANF', title = 'Linear Time Trends for Percent of Families on TANF: \n North Carolina and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="Policy Status",values=cols)
+  color = "darkgray", size = 0.20, 
+  method = "loess"
+  ) + labs(x = 'Date', y = 'Percent of Families on TANF', title = 'Linear Time Trends for Percent of Families on TANF: \n North Carolina and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
 ```
 
 ```{r, fig.height = 3, fig.width = 12, warning = F, message = F}
