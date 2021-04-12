@@ -22,6 +22,7 @@ library(gridExtra)
 library(maps)
 library(mapproj)
 library(lfe)
+library(corrplot)
 ```
 
 ```{r, results = F, message = F, warning = F}
@@ -87,19 +88,39 @@ final <- final %>% filter(tanf_fams != 0)
 
 ### Distribution of Outcome Variable of Interest: 
 
-```{r, warning = F, message = F, fig.height = 3, fig.width = 10}
-xfit <- seq(-200, max(final$scale_tanf_fams), length = 100) 
-yfit <- dnorm(xfit, mean = mean(final$scale_tanf_fams), sd = sd(final$scale_tanf_fams)) 
+```{r}
+xfit <- seq(0, max(final$scale_tanf_fams), length = 100) 
+yfit <- dnorm(xfit, mean = mean(final$scale_tanf_fams), sd = sd(final$scale_tanf_fams))
 
-CountPlot <- ggplot() + geom_histogram(aes(x = final$scale_tanf_fams), fill = "slategray3") + geom_line(aes(x = xfit, y = yfit*2000*300), col = "darkblue", size = 1) + labs(x = 'TANF Familes Per Capita Scaled to 100,000', y = 'Frequency', title = 'Histogram of TANF Families Per Capita \n Scaled to 100,000') + theme(plot.title = element_text(hjust = 0.5))
+MeanTANF <- mean(final$scale_tanf_fams)
+SdTANF <- sd(final$scale_tanf_fams)
+above <- MeanTANF + SdTANF
+below <- MeanTANF - SdTANF
 
-#Generate a normal probability plot. 
-QPlot <- ggplot() +
-  geom_qq(aes(sample = final$scale_tanf_fams), col = "darkblue") +
-  geom_qq_line(aes(sample = final$scale_tanf_fams), col = 'darkred') + labs(x = 'Theoretical', y = 'Sample', title = 'Q-Q Normality Plot') + theme(plot.title = element_text(hjust = 0.5))
-
-grid.arrange(CountPlot, QPlot, ncol = 2, nrow = 1)
+cols <- c("Dev" = "dodgerblue", "Mean" = "darkred", "Normal" = '#364C54')
+CountPlot <- ggplot() + geom_histogram(aes(x = final$scale_tanf_fams), fill = "#BCD2CB", binwidth = 20) + geom_line(aes(x = xfit, y = yfit*2000*150, color = 'Normal'), size = 1) + labs(x = 'TANF Familes Per Capita Scaled to 100,000', y = 'Frequency', title = 'Histogram of TANF Families Per Capita \n Scaled to 100,000') + geom_vline(aes(xintercept = MeanTANF, color = 'Mean'), linetype = 'dashed') + geom_vline(aes(xintercept = below, color = 'Dev'), linetype = 'dashed') + geom_vline(xintercept = above, color = 'dodgerblue', linetype = 'dashed') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_color_manual(name = "", labels = c('1 St. Deviation', 'Empirical Mean', 'Normal Distr.'), values = cols) + theme(legend.position="bottom")
+CountPlot
 ```
+
+```{r, warning = F, message = F}
+EmpPlot <- ggplot(data = final, mapping = aes(x = Date, y = unemp_rate, color = unemp_rate)) + geom_line() + theme_classic() + theme(legend.position = "none") + labs(x = 'Date', y = 'Unemployment Rate', title = 'Unemployment Rate: 2001 - 2019') + theme(plot.title = element_text(hjust = 0.5)) 
+EmpPlot
+
+FamPlot <- ggplot(data = final, mapping = aes(x = Date, y = scale_num_below_fpl)) + geom_line(color = 'darkgray') + stat_smooth(method = 'lm', color = '#364C54', size = 2) + theme_classic() + theme(legend.position = "none") + labs(x = 'Date', y = 'Number of Families Below Federal Poverty Level \n Scaled to 100,000', title = 'Number of Families Below Federal Poverty Level \n Scaled to 100,000: 2001 - 2019') + theme(plot.title = element_text(hjust = 0.5)) 
+FamPlot
+```
+
+```{r, fig.width = 10, warning = F, message = F}
+keep <- c('scale_tanf_fams', 'unemp_rate', 'scale_num_below_fpl')
+Data3 <- final[keep]
+colnames(Data3) <- c('TANF Families', 'Unemp. Rate', 'Families Below FPL')
+
+M <- cor(Data3)
+Correlation <- corrplot(M, method="circle", type = 'upper', col=colorRampPalette(c('navy', "lightblue", '#D7E8C4'))(200), addCoef.col = "black", tl.cex = 0.8, tl.col = 'black')
+```
+
+
+
 
 # Identification of Policy States. 
 
@@ -211,18 +232,20 @@ ControlPost <- R1 %>% filter(Date >= '2014-10-01')
 ```{r, warning = F, message = F}
 #Visualize simple time trend of TANF families. 
 cols <- c("Tennessee" = '#364C54', "Control Region" = "#BCD2CB")
-RegInit <- ggplot() + stat_smooth(TNPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
+RegInit <- ggplot() + geom_line(TNPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
   color = "darkgray", size = 0.20, alpha = 0.75, 
-  method = "loess") + stat_smooth(TNPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
+  method = "lm") + stat_smooth(TNPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
+  color = "darkgray", size = 0.20, alpha = 0.75, 
+  method = "lm") + stat_smooth(TNPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
   color = "darkgray", size = 0.20, alpha = 0.75,   
-  method = "loess") + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
+  method = "lm") + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
   color = "darkgray", size = 0.20,
-  method = "loess"
+  method = "lm"
   ) + geom_vline(xintercept = as.Date('2014-07-01'), linetype="dashed", 
                 color = "black", size=0.50) + geom_vline(xintercept = as.Date('2014-10-01'), linetype="dashed", 
                 color = "black", size=0.50) + stat_smooth(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
   color = "darkgray", size = 0.20, 
-  method = "loess"
+  method = "lm"
   ) + labs(x = 'Date', y = 'Percent of Families on TANF', title = 'Linear Time Trends for Percent of Families on TANF: \n Tennessee and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
 ```
 
