@@ -2,6 +2,20 @@
 ##############
 # Load R libraries
 ##############
+knitr::opts_chunk$set(echo = FALSE)
+ library(dplyr)
+ library(kableExtra)
+ library(zoo)
+ library(stargazer)
+ library(sandwich)
+ library(lmtest)
+ library(plm)
+ library(tidyverse)
+ library(ggplot2)
+ library(gridExtra)
+ library(maps)
+ library(mapproj)
+ library(lfe)
 library (zoo)
 library (stargazer)
 library(sandwich)
@@ -20,11 +34,35 @@ head(final)
 # Basic analysis
 ##############
 
-# Regression
+#Restrict Year range: 
+ Rang1 <- seq(2001, 2019, 1)
+ final <- final %>% filter(year %in% Rang1)
+
+ #Generate a new DateTime variable: 
+ final$Date <- as.Date(final$datetime, "%Y-%m-%d")
+
+ #Year to Factor: 
+ final$year_cat <- as.factor(final$year)
+
+ #Convert drug_law to binary factor variable. 
+ final$drug_law <- as.factor(final$drug_law)
+ 
+```
+
+```{r}
+#Drop NA values: 
+ final <- final %>% drop_na()
+
+ #Identify DC as an outlier; drop: 
+ final <- final %>% filter(state != 'District of Columbia')
+
+ #There are some values that are equal to 0; check that these are missing 
+ #within the raw data and omit (major outliers). 
+ final <- final %>% filter(tanf_fams != 0)
+
 final$year_cat <- as.factor(final$year) # Duplicate the year variable as a factor for the FEs
 final$scale_tanf_fams <- final$percap_tanf_fams * 100000 # Scale the per capita tanf rate to 100,000 inhabitants
 final$scale_num_below_fpl <- final$percap_num_below_fpl * 100000 # Scale the per capita number below the federal poverty to 100,000 inhabitants
-
 summary(basic<-lm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate + (state) + (year_cat),data=final)) # We exclude a "post" indicator variable to reflect the period after the policy implementation for the aggregate analysis as the policy was implemented at different points in times for the different states, only include year for the time FE
 
 # Cluster standard errors
