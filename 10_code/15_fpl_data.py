@@ -52,7 +52,7 @@ df["above_fpl"] = (
 # sum up households below povety line per state-year
 df2 = (
     df.groupby(["year", "statefip"])
-    .below_fpl.size()
+    .below_fpl.sum()
     .to_frame("num_below_fpl")
     .reset_index()
     .rename_columns({"statefip": "state"})
