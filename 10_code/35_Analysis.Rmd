@@ -28,6 +28,8 @@ library(corrplot)
 ```{r, results = F, message = F, warning = F}
 setwd('C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/20_intermediate_data')
 final<-read.csv("final_dataset_clean.csv")
+
+final <- read.csv("E:/final_dataset_clean.txt")
 ```
 
 # Initial Set-Up and (Some) EDA. 
@@ -309,7 +311,7 @@ grid.arrange(ThisPlot, QQ2, ncol = 2, nrow = 1)
 ```
 
 ```{r}
-All <- c('Michigan', 'Wisconsin', 'Illinois', 'Indiana', 'Ohio', 'Iowa', 'Minnesota', 'Pennsylvania')
+All <- c('Michigan', 'Wisconsin', 'Illinois', 'Indiana', 'Ohio', 'Iowa', 'Minnesota', 'Pennsylvania', 'South Carolina', 'New York')
 Test <- final %>% filter(state %in% All)
 
 ggplot() + geom_line(data = Test, mapping= aes(x = Date, y = scale_tanf_fams, color = state))
@@ -318,24 +320,24 @@ ggplot() + geom_line(data = Test, mapping= aes(x = Date, y = scale_tanf_fams, co
 
 
 
-### Case: Michigan. 
+### Case: Wisconsin. 
 
-Policy Date: 12/2014. 
+Policy Date: 11/2015. 
 
-Control Region: Ohio, Pennsylvania.
+Control Region: Ohio, Pennsylvania, New York.
 
 ```{r}
-Region1Overall <- c('Illinois')
+Region1Overall <- c('Ohio', 'Pennsylvania', 'New York')
 R1 <- final %>% filter(state %in% Region1Overall) 
 
-TN <- final %>% filter(state == 'Michigan') 
+TN <- final %>% filter(state == 'Wisconsin') 
 
 #Define pre and post time periods by breakpoint: 
-TNPre <- TN %>% filter(Date <= '2014-12-01')
-ControlPre <- R1 %>% filter(Date <= '2014-12-01')
+TNPre <- TN %>% filter(Date <= '2015-11-01')
+ControlPre <- R1 %>% filter(Date <= '2015-11-01')
 
-TNPost <- TN %>% filter(Date >= '2015-02-01')
-ControlPost <- R1 %>% filter(Date >= '2015-02-01')
+TNPost <- TN %>% filter(Date >= '2016-01-01')
+ControlPost <- R1 %>% filter(Date >= '2016-01-01')
 ```
 
 ```{r, warning = F, message = F}
@@ -368,10 +370,11 @@ Test <- final %>% filter(state %in% All)
 ggplot() + geom_line(data = Test, mapping = aes(x = Date, y = scale_tanf_fams,color = state))
 ```
 
+Colorado, New Mexico. 
 
 ```{r}
 #Visualize TN and Controls geographically: 
-Region1Overall <- c('New Mexico')
+Region1Overall <- c('Colorado', 'New Mexico')
 
 InterList <- c()
 for (i in us_states$region) {
@@ -394,7 +397,7 @@ pUtah <- ggplot(data = us_states,
 ```
 
 ```{r}
-Region1 <- c('New Mexico')
+Region1 <- c('New Mexico', 'Colorado', 'Nevada')
 
 R1 <- final %>% filter(state %in% Region1) 
 
@@ -434,7 +437,7 @@ grid.arrange(pUtah, RegInit, ncol = 2, nrow = 1)
 
 ```{r}
 #Now, make a new dataframe with all relevant states: 
-StatesListUtah <- c('Utah', 'New Mexico')
+StatesListUtah <- c('Utah', 'New Mexico', 'Colorado', 'Nevada')
 UtahData <- final %>% filter(state %in% StatesListUtah)
 
 #Treatment/Control state indicator: 
@@ -463,12 +466,12 @@ for (i in UtahData$Date){
 }
 
 UtahData$Post_Ind <- as.factor(PList1)
-UtahData$state <- as.factor(TNData$state)
+UtahData$state <- as.factor(UtahData$state)
 ```
 
 ```{r, comment = ''}
 #Fixed Effects DID model: 
-UtahReg <- felm(scale_tanf_fams ~ Drug_Law + Post_Ind + scale_num_below_fpl + unemp_rate + Drug_Law*Post_Ind | year_cat, data = UtahData)
+UtahReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = UtahData)
 
 summary(UtahReg)
 ```
