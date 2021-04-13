@@ -71,11 +71,15 @@ df["datetime"] = pd.to_datetime(df["datetime"])
 
 # Indicator
 drug_law_states = drug_states.state.unique()
+drug_law_years = drug_states.datetime.tolist()
+
 df["drug_law"] = 0
 
-for i in drug_law_states:
-    for t in drug_states.datetime.unique():
-        df.loc[(df.state == i) & (df.datetime >= t), "drug_law"] = 1
+for i in range(len(drug_law_states)):
+    df.loc[
+        (df.state == drug_law_states[i]) & (df.datetime >= drug_law_years[i]),
+        "drug_law",
+    ] = 1
 
 # Distance from Cutoff
 df["days_from_policy"] = np.nan
@@ -86,11 +90,32 @@ for i in range(len(drug_states)):
     df.loc[
         (df.datetime >= drug_states.datetime[i]) & (df.state == drug_states.state[i]),
         "days_from_policy",
-    ] = (df.datetime - date)
+    ] = (
+        df.datetime - date
+    )
 
-    
+
+# Drop 2000 and 2020
+df = df[(df.year != 2000) & (df.year != 2020)]
+
 # Reorder Columns
-df = df[['state', 'year', 'month', 'datetime', 'population', 'num_below_fpl', "tanf_fams", "percap_num_below_fpl", "unemp_rate", "percap_tanf_fams", "drug_law", "days_from_policy"]]
+df = df[
+    [
+        "state",
+        "year",
+        "month",
+        "datetime",
+        "population",
+        "num_below_fpl",
+        "tanf_fams",
+        "percap_num_below_fpl",
+        "unemp_rate",
+        "percap_tanf_fams",
+        "drug_law",
+        "days_from_policy",
+    ]
+]
+
 
 ################################
 # Save
