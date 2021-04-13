@@ -33,15 +33,15 @@ df.poverty.replace({0: np.nan}, inplace=True)  # replace NaNs
 df = df.sort_values(["year", "statefip"]).reset_index(drop=True)
 
 # Below 100% of federal poverty level? (FPL)
-df["hhs_below_fpl"] = 0
+df["below_fpl"] = 0
 df.loc[(df.poverty < 100), "below_fpl"] = 1
 
-df["hhs_above_fpl"] = 0
+df["above_fpl"] = 0
 df.loc[(df.poverty >= 100), "above_fpl"] = 1
 
-df["below_fpl"] = df["hhs_below_fpl"] * df.hhwt
-df["hhs_above_fpl"] = (
-    df["hhs_above_fpl"] * df.hhwt
+df["below_fpl"] = df["below_fpl"] * df.hhwt
+df["above_fpl"] = (
+    df["above_fpl"] * df.hhwt
 )  # Weight by # of households that are represented by this observation
 
 
@@ -65,7 +65,9 @@ merged = pd.merge(
 )
 
 merged = merged[
-    (merged.year != 2020) & (merged.state != "State not identified")
+    (merged.year != 2020)
+    & (merged.year != 2000)
+    & (merged.state != "State not identified")
 ]  # no 2020 data available for poverty level, and one weird coding
 
 assert (merged._merge == "both").all()
