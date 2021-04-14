@@ -25,6 +25,7 @@ library(lfe)
 library(corrplot)
 ```
 
+
 ```{r, results = F, message = F, warning = F}
 setwd('C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/20_intermediate_data')
 final<-read.csv("final_dataset_clean.csv")
@@ -112,6 +113,11 @@ CountPlot
 The distribution of the outcome variable of interest is presented above. The number of households on TANF by state is a discrete count variable, but approximate Normality is assumed under sufficient number of observations. The data is skewed right.
 
 Two control variables are included within the data: state unemployment rate and the number of households below the federal poverty line per 100,000 state residents. 
+
+```{r, warning = F, message = F}
+TANFPlot <- ggplot(data = final, mapping = aes(x = Date, y = scale_tanf_fams, color = scale_tanf_fams)) + geom_line() + geom_smooth(method = 'lm', color = 'lightblue') + theme_classic() + theme(legend.position = "none") + labs(x = 'Date', y = 'TANF Families Per Capita Scaled to 100,000', title = 'TANF Families Per Capita Scaled to 100,000: \n 2001 - 2019') + theme(plot.title = element_text(hjust = 0.5)) 
+TANFPlot
+```
 
 ```{r, warning = F, message = F, fig.height = 5, fig.width = 18}
 EmpPlot <- ggplot(data = final, mapping = aes(x = Date, y = unemp_rate, color = unemp_rate)) + geom_line() + theme_classic() + theme(legend.position = "none") + labs(x = 'Date', y = 'Unemployment Rate', title = 'Unemployment Rate: 2001 - 2019') + theme(plot.title = element_text(hjust = 0.5)) 
@@ -439,9 +445,9 @@ TNData$state <- as.factor(TNData$state)
 
 ```{r, comment = ''}
 #Fixed Effects DID model: 
-TNReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = TNData)
+MichiganReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = TNData)
 
-summary(TNReg)
+summary(MichiganReg)
 ```
 ```{r, fig.height = 2.5, fig.width = 10, fig.align = 'center'}
 #Model diagnostics plots: 
