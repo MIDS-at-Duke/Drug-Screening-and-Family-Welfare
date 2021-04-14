@@ -310,9 +310,39 @@ TNData$state <- as.factor(TNData$state)
 ```{r, comment = ''}
 #Fixed Effects DID model: 
 TNReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = TNData)
-
-summary(TNReg)
 ```
+
+```{r, warning = F, message = F}
+# Preliminaries for table design. 
+robust.order <- c("drug_law1", "scale_num_below_fpl", "unemp_rate") 
+robust.label =  c( "Drug Law (1=yes/0=no)",
+                   "Number Below Federal Poverty Level (per 100,000)",
+                   "Unemployment Rate (in %)")
+setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
+
+# Set up table with all three basic analyses components
+stargazer(TNReg, 
+          title="Table 2. Policy Regression for Tennessee.", 
+          type = 'html', 
+          out = "table2A.html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          order=paste0("^", robust.order , "$"), 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="",  
+          column.labels = c("Basic"),
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
+          "TANF rate scaled to 100,000 inhabitants."),
+          summary.stat=("n"))
+```
+
+
+
 ```{r, fig.height = 2.5, fig.width = 10, fig.align = 'center'}
 #Model diagnostics plots: 
 Fitted <- TNReg$fitted.values[,1]
@@ -446,9 +476,36 @@ TNData$state <- as.factor(TNData$state)
 ```{r, comment = ''}
 #Fixed Effects DID model: 
 MichiganReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = TNData)
-
-summary(MichiganReg)
 ```
+```{r, warning = F, message = F}
+# Preliminaries for table design. 
+robust.order <- c("drug_law1", "scale_num_below_fpl", "unemp_rate") 
+robust.label =  c( "Drug Law (1=yes/0=no)",
+                   "Number Below Federal Poverty Level (per 100,000)",
+                   "Unemployment Rate (in %)")
+setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
+
+# Set up table with all three basic analyses components
+stargazer(MichiganReg, 
+          title="Table 3. Policy Regression for Michigan.", 
+          type = 'html', 
+          out = "table2B.html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          order=paste0("^", robust.order , "$"), 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="",  
+          column.labels = c("Basic"),
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
+          "TANF rate scaled to 100,000 inhabitants."),
+          summary.stat=("n"))
+```
+
 ```{r, fig.height = 2.5, fig.width = 10, fig.align = 'center'}
 #Model diagnostics plots: 
 Fitted <- TNReg$fitted.values[,1]
@@ -588,6 +645,35 @@ UtahReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | 
 
 summary(UtahReg)
 ```
+```{r, warning = F, message = F}
+# Preliminaries for table design. 
+robust.order <- c("drug_law1", "scale_num_below_fpl", "unemp_rate") 
+robust.label =  c( "Drug Law (1=yes/0=no)",
+                   "Number Below Federal Poverty Level (per 100,000)",
+                   "Unemployment Rate (in %)")
+setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
+
+# Set up table with all three basic analyses components
+stargazer(UtahReg, 
+          title="Table 4. Policy Regression for Utah.", 
+          type = 'html', 
+          out = "table2C.html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          order=paste0("^", robust.order , "$"), 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="",  
+          column.labels = c("Basic"),
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
+          "TANF rate scaled to 100,000 inhabitants."),
+          summary.stat=("n"))
+```
+
 ```{r, fig.height = 2.5, fig.width = 10, fig.align = 'center'}
 #Model diagnostics plots: 
 Fitted <- UtahReg$fitted.values[,1]
