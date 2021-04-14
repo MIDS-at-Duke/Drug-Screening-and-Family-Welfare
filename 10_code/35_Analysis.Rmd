@@ -322,9 +322,9 @@ setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
 
 # Set up table with all three basic analyses components
 stargazer(TNReg, 
-          title="Table 2. Policy Regression for Tennessee.", 
+          title="Table 2 (A). Policy Regression for Tennessee.", 
           type = 'html', 
-          out = "table2A.html",
+          out = "table2(A).html",
           omit.stat=c("f", "ser"),
           style = "apsr", 
           order=paste0("^", robust.order , "$"), 
@@ -487,9 +487,9 @@ setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
 
 # Set up table with all three basic analyses components
 stargazer(MichiganReg, 
-          title="Table 3. Policy Regression for Michigan.", 
+          title="Table 2 (B). Policy Regression for Michigan.", 
           type = 'html', 
-          out = "table2B.html",
+          out = "table2(B).html",
           omit.stat=c("f", "ser"),
           style = "apsr", 
           order=paste0("^", robust.order , "$"), 
@@ -655,9 +655,9 @@ setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
 
 # Set up table with all three basic analyses components
 stargazer(UtahReg, 
-          title="Table 4. Policy Regression for Utah.", 
+          title="Table 2 (C). Policy Regression for Utah.", 
           type = 'html', 
-          out = "table2C.html",
+          out = "table2(C).html",
           omit.stat=c("f", "ser"),
           style = "apsr", 
           order=paste0("^", robust.order , "$"), 
