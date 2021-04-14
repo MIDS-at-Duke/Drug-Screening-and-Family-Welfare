@@ -22,6 +22,9 @@ library(sandwich)
 library("lmtest")
 library(plm)
 
+```
+
+```{r}
 ##############
 # Read in data 
 ##############
@@ -30,8 +33,9 @@ setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifyi
 final<-read.csv("final_dataset_clean.csv")
 head(final)
 
+
 ##############
-# Basic analysis
+# Do some cleaning
 ##############
 
 #Restrict Year range: 
@@ -46,10 +50,7 @@ head(final)
 
  #Convert drug_law to binary factor variable. 
  final$drug_law <- as.factor(final$drug_law)
- 
-```
 
-```{r}
 #Drop NA values: 
  final <- final %>% drop_na()
 
@@ -63,6 +64,13 @@ head(final)
 final$year_cat <- as.factor(final$year) # Duplicate the year variable as a factor for the FEs
 final$scale_tanf_fams <- final$percap_tanf_fams * 100000 # Scale the per capita tanf rate to 100,000 inhabitants
 final$scale_num_below_fpl <- final$percap_num_below_fpl * 100000 # Scale the per capita number below the federal poverty to 100,000 inhabitants
+```
+
+```{r}
+##############
+# Basic analysis
+##############
+
 summary(basic<-lm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate + (state) + (year_cat),data=final)) # We exclude a "post" indicator variable to reflect the period after the policy implementation for the aggregate analysis as the policy was implemented at different points in times for the different states, only include year for the time FE
 
 # Cluster standard errors
@@ -80,10 +88,9 @@ robust.label =  c( "Drug Law (1=yes/0=no)",
 setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifying DS/project/Policy-Stats-Team/30_results")
 
 stargazer(basic,
-          title="Table 1. Basic Analysis - TANF Rate per capita", 
+          title="Table 1a. Basic Analysis - TANF Rate per capita", 
           type = 'html', 
-          out = "table1.html",
-          file=OutPath,
+          out = "table1a.html",
           omit.stat=c("f", "ser"),
           style = "apsr", 
           order=paste0("^", robust.order , "$"), 
@@ -97,7 +104,271 @@ stargazer(basic,
           "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
           "TANF rate scaled to 100,000 inhabitants."),
           summary.stat=("n"))
+```
 
+```{r}
+##############
+# Basic analysis - robustness check 1: drop FEs
+##############
+
+summary(basic_rob1<-lm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate,
+                         data=final)) # We exclude a "post" indicator variable to reflect the period after the policy implementation for the aggregate analysis as the policy was implemented at different points in times for the different states, only include year for the time FE
+
+```
+
+```{r}
+##############
+# Prep robustness check 2: Lag time of 6 months on either end - subset states with lag
+##############
+
+# Subset Alabama
+class(final$datetime)
+alabama <- subset(final, state=="Alabama",
+select=state:scale_num_below_fpl)
+
+alabama_lag <- subset(alabama, datetime=="2013-10-01" | datetime=="2013-11-01" 
+                      | datetime=="2013-12-01" | datetime=="2014-01-01" 
+                      | datetime=="2014-02-01" | datetime=="2014-03-01"
+                      | datetime=="2014-04-01" | datetime=="2014-05-01"
+                      | datetime=="2014-06-01" | datetime=="2014-07-01"
+                      | datetime=="2014-08-01" | datetime=="2014-09-01"
+                      | datetime=="2014-10-01",
+select=state:scale_num_below_fpl)
+
+
+# Subset Arizona
+arizona <- subset(final, state=="Arizona",
+select=state:scale_num_below_fpl)
+
+arizona_lag <- subset(arizona, datetime=="2010-10-01" | datetime=="2010-11-01" 
+                      | datetime=="2010-12-01" | datetime=="2011-01-01" 
+                      | datetime=="2011-02-01" | datetime=="2011-03-01"
+                      | datetime=="2011-04-01" | datetime=="2011-05-01"
+                      | datetime=="2011-06-01" | datetime=="2011-07-01"
+                      | datetime=="2011-08-01" | datetime=="2011-09-01"
+                      | datetime=="2011-10-01",
+select=state:scale_num_below_fpl)
+
+# Subset Arkansas
+arkansas <- subset(final, state=="Arkansas",
+select=state:scale_num_below_fpl)
+
+arkansas_lag <- subset(arkansas, datetime=="2014-10-01" | datetime=="2014-11-01" 
+                      | datetime=="2014-12-01" | datetime=="2015-01-01" 
+                      | datetime=="2015-02-01" | datetime=="2015-03-01"
+                      | datetime=="2015-04-01" | datetime=="2015-05-01"
+                      | datetime=="2015-06-01" | datetime=="2015-07-01"
+                      | datetime=="2015-08-01" | datetime=="2015-09-01"
+                      | datetime=="2015-10-01",
+select=state:scale_num_below_fpl)
+
+# Subset Florida
+florida <- subset(final, state=="Florida",
+select=state:scale_num_below_fpl)
+
+florida_lag <- subset(florida, datetime=="2011-01-01" | datetime=="2011-02-01" 
+                      | datetime=="2011-03-01" | datetime=="2011-04-01" 
+                      | datetime=="2011-05-01" | datetime=="2011-06-01"
+                      | datetime=="2011-07-01" | datetime=="2011-08-01"
+                      | datetime=="2011-09-01" | datetime=="2011-10-01"
+                      | datetime=="2011-11-01" | datetime=="2011-12-01"
+                      | datetime=="2012-01-01",
+select=state:scale_num_below_fpl)
+
+# Subset Georgia
+georgia <- subset(final, state=="Georgia",
+select=state:scale_num_below_fpl)
+
+georgia_lag <- subset(georgia, datetime=="2012-01-01" | datetime=="2012-02-01" 
+                      | datetime=="2012-03-01" | datetime=="2012-04-01" 
+                      | datetime=="2012-05-01" | datetime=="2012-06-01"
+                      | datetime=="2012-07-01" | datetime=="2012-08-01"
+                      | datetime=="2012-09-01" | datetime=="2012-10-01"
+                      | datetime=="2012-11-01" | datetime=="2012-12-01"
+                      | datetime=="2013-01-01",
+select=state:scale_num_below_fpl)
+
+# Subset Kansas
+kansas <- subset(final, state=="Kansas",
+select=state:scale_num_below_fpl)
+
+kansas_lag <- subset(kansas, datetime=="2013-07-01" | datetime=="2013-08-01" 
+                      | datetime=="2013-09-01" | datetime=="2013-10-01" 
+                      | datetime=="2013-11-01" | datetime=="2013-12-01"
+                      | datetime=="2014-01-01" | datetime=="2014-02-01"
+                      | datetime=="2014-03-01" | datetime=="2014-04-01"
+                      | datetime=="2014-05-01" | datetime=="2014-06-01"
+                      | datetime=="2014-07-01",
+select=state:scale_num_below_fpl)
+
+# Subset Michigan
+michigan <- subset(final, state=="Michigan",
+select=state:scale_num_below_fpl)
+
+michigan_lag <- subset(michigan, datetime=="2014-06-01" | datetime=="2014-07-01" 
+                      | datetime=="2014-08-01" | datetime=="2014-09-01" 
+                      | datetime=="2014-10-01" | datetime=="2014-11-01"
+                      | datetime=="2014-12-01" | datetime=="2015-01-01"
+                      | datetime=="2015-02-01" | datetime=="2015-03-01"
+                      | datetime=="2015-04-01" | datetime=="2015-05-01"
+                      | datetime=="2015-06-01",
+select=state:scale_num_below_fpl)
+
+# Subset Mississippi 
+mississippi <- subset(final, state=="Mississippi",
+select=state:scale_num_below_fpl)
+
+mississippi_lag <- subset(mississippi, datetime=="2014-01-01" | datetime=="2014-02-01" 
+                      | datetime=="2014-03-01" | datetime=="2014-04-01" 
+                      | datetime=="2014-05-01" | datetime=="2014-06-01"
+                      | datetime=="2014-07-01" | datetime=="2014-08-01"
+                      | datetime=="2014-09-01" | datetime=="2014-10-01"
+                      | datetime=="2014-11-01" | datetime=="2014-12-01"
+                      | datetime=="2015-01-01",
+select=state:scale_num_below_fpl)
+
+# Subset Missouri 
+missouri <- subset(final, state=="Missouri",
+select=state:scale_num_below_fpl)
+
+missouri_flag <- subset(missouri, datetime=="2011-02-01" | datetime=="2011-03-01" 
+                      | datetime=="2011-04-01" | datetime=="2011-05-01" 
+                      | datetime=="2011-06-01" | datetime=="2011-07-01"
+                      | datetime=="2011-08-01" | datetime=="2011-09-01"
+                      | datetime=="2011-10-01" | datetime=="2011-11-01"
+                      | datetime=="2011-12-01" | datetime=="2012-01-01"
+                      | datetime=="2012-02-01",
+select=state:scale_num_below_fpl)
+
+# Subset North Carolina 
+nc <- subset(final, state=="North Carolina",
+select=state:scale_num_below_fpl)
+
+nc_flag <- subset(nc, datetime=="2013-01-01" | datetime=="2013-02-01" 
+                      | datetime=="2013-03-01" | datetime=="2013-04-01" 
+                      | datetime=="2013-05-01" | datetime=="2013-06-01"
+                      | datetime=="2013-07-01" | datetime=="2013-08-01"
+                      | datetime=="2013-09-01" | datetime=="2013-10-01"
+                      | datetime=="2013-11-01" | datetime=="2013-12-01"
+                      | datetime=="2014-01-01",
+select=state:scale_num_below_fpl)
+
+# Subset Oklahoma
+oklahoma <- subset(final, state=="Oklahoma",
+select=state:scale_num_below_fpl)
+
+oklahoma_flag <- subset(oklahoma, datetime=="2012-05-01" | datetime=="2012-06-01" 
+                      | datetime=="2012-07-01" | datetime=="2012-08-01" 
+                      | datetime=="2012-09-01" | datetime=="2012-10-01"
+                      | datetime=="2012-11-01" | datetime=="2012-12-01"
+                      | datetime=="2013-01-01" | datetime=="2013-02-01"
+                      | datetime=="2013-03-01" | datetime=="2013-04-01"
+                      | datetime=="2013-05-01",
+select=state:scale_num_below_fpl)
+
+# Subset Tennesse
+tennesse <- subset(final, state=="Tennesse",
+select=state:scale_num_below_fpl)
+
+tennesse_flag <- subset(tennesse, datetime=="2014-01-01" | datetime=="2014-02-01" 
+                      | datetime=="2014-03-01" | datetime=="2014-04-01" 
+                      | datetime=="2014-05-01" | datetime=="2014-06-01"
+                      | datetime=="2014-07-01" | datetime=="2014-08-01"
+                      | datetime=="2014-09-01" | datetime=="2014-10-01"
+                      | datetime=="2014-11-01" | datetime=="2014-12-01"
+                      | datetime=="2015-01-01",
+select=state:scale_num_below_fpl)
+
+# Subset Utah
+utah <- subset(final, state=="Utah",
+select=state:scale_num_below_fpl)
+
+utah_flag <- subset(utah, datetime=="2011-09-01" | datetime=="2011-10-01" 
+                      | datetime=="2011-11-01" | datetime=="2011-12-01" 
+                      | datetime=="2012-01-01" | datetime=="2012-02-01"
+                      | datetime=="2012-03-01" | datetime=="2012-04-01"
+                      | datetime=="2012-05-01" | datetime=="2012-06-01"
+                      | datetime=="2012-07-01" | datetime=="2012-08-01"
+                      | datetime=="2012-09-01",
+select=state:scale_num_below_fpl)
+
+# Subset West Virginia
+virginia <- subset(final, state=="West Virginia",
+select=state:scale_num_below_fpl)
+
+virginia_lag <- subset(virginia, datetime=="2016-06-01" | datetime=="2016-07-01" 
+                      | datetime=="2016-08-01" | datetime=="2016-09-01" 
+                      | datetime=="2016-10-01" | datetime=="2016-11-01"
+                      | datetime=="2016-12-01" | datetime=="2017-01-01"
+                      | datetime=="2017-02-01" | datetime=="2017-03-01"
+                      | datetime=="2017-04-01" | datetime=="2017-05-01"
+                      | datetime=="2017-06-01",
+select=state:scale_num_below_fpl)
+
+# Subset Wisconsin
+wisconsin <- subset(final, state=="Wisconsin",
+select=state:scale_num_below_fpl)
+
+wisconsin_flag <- subset(wisconsin, datetime=="2015-05-01" | datetime=="2015-06-01" 
+                      | datetime=="2015-07-01" | datetime=="2015-08-01" 
+                      | datetime=="2015-09-01" | datetime=="2015-10-01"
+                      | datetime=="2015-11-01" | datetime=="2015-12-01"
+                      | datetime=="2016-01-01" | datetime=="2016-02-01"
+                      | datetime=="2016-03-01" | datetime=="2016-04-01"
+                      | datetime=="2016-05-01",
+select=state:scale_num_below_fpl)
+```
+
+```{r}
+# merge by row
+final_lag <- rbind(alabama_lag, arizona_lag, arkansas_lag, florida_lag, georgia_lag, kansas_lag, 
+                   michigan_lag, mississippi_lag, missouri_flag, nc_flag, oklahoma_flag,
+                   tennesse_flag, utah_flag, virginia_lag, wisconsin_flag)
+
+```
+
+```{r}
+#########
+# Robustness check regression part 2
+########
+summary(basic_rob2<-lm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate,
+                         data=final_lag)) 
+
+```
+
+```{r}
+
+##############
+# Create tables 
+##############
+
+# Preliminaries for table design
+robust.order <- c("drug_law", "scale_num_below_fpl", "unemp_rate") 
+
+robust.label =  c( "Drug Law (1=yes/0=no)",
+                   "Number Below Federal Poverty Level (per 100,000)",
+                   "Unemployment Rate (in %)") 
+setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifying DS/project/Policy-Stats-Team/30_results")
+
+# Set up table with all three basic analyses components
+stargazer(basic, basic_rob1, basic_rob2,
+          title="Table 4. Basic model plus two robustnesschecks", 
+          type = 'html', 
+          out = "table4.html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          order=paste0("^", robust.order , "$"), 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="",  
+          column.labels = c("Basic", "Without FEs", "With Lag"),
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
+          "TANF rate scaled to 100,000 inhabitants."),
+          summary.stat=("n"))
 
 ##############
 # Save
