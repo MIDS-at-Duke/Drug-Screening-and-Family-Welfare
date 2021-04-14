@@ -242,10 +242,10 @@ oklahoma_flag <- subset(oklahoma, datetime=="2012-05-01" | datetime=="2012-06-01
 select=state:scale_num_below_fpl)
 
 # Subset Tennesse
-tennesse <- subset(final, state=="Tennesse",
+tennessee <- subset(final, state=="Tennessee",
 select=state:scale_num_below_fpl)
 
-tennesse_flag <- subset(tennesse, datetime=="2014-01-01" | datetime=="2014-02-01" 
+tennessee_flag <- subset(tennessee, datetime=="2014-01-01" | datetime=="2014-02-01" 
                       | datetime=="2014-03-01" | datetime=="2014-04-01" 
                       | datetime=="2014-05-01" | datetime=="2014-06-01"
                       | datetime=="2014-07-01" | datetime=="2014-08-01"
@@ -298,8 +298,9 @@ select=state:scale_num_below_fpl)
 # merge by row
 final_lag <- rbind(alabama_lag, arizona_lag, arkansas_lag, florida_lag, georgia_lag, kansas_lag, 
                    michigan_lag, mississippi_lag, missouri_flag, nc_flag, oklahoma_flag,
-                   tennesse_flag, utah_flag, virginia_lag, wisconsin_flag)
+                   tennessee_flag, utah_flag, virginia_lag, wisconsin_flag)
 
+print(final_lag)
 ```
 
 ```{r}
@@ -322,7 +323,7 @@ robust.order <- c("drug_law", "scale_num_below_fpl", "unemp_rate", "^Constant$")
 
 robust.label =  c( "Drug Law (1=yes/0=no)",
                    "Number Below Federal Poverty Level (per 100,000)",
-                   "Unemployment Rate (in %)") 
+                   "Unemployment Rate (in %)", "Constant") 
 setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifying DS/project/Policy-Stats-Team/30_results")
 
 # Set up table with all three basic analyses components
