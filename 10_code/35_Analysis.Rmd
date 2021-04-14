@@ -28,13 +28,19 @@ library(corrplot)
 ```{r, results = F, message = F, warning = F}
 setwd('C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/20_intermediate_data')
 final<-read.csv("final_dataset_clean.csv")
-
-final <- read.csv("E:/final_dataset_clean.txt")
 ```
 
-# Initial Set-Up and (Some) EDA. 
+# Initial Set-Up and (Some) EDA.
 
-```{r}
+The compiled data consists of 11,628 observations and 11 variables. Refer to Appendix I for definitions of all variables. The year range within the data is 2001 to 2019, inclusive. 
+
+The number of households on TANF is scaled by state population and multiplied by a constant of 100,000 to yield the number of households on TANF per 100,000 state residents. This is the outcome variable of interest for the study. 
+
+The number of families below the federal poverty line is similarly scaled by state population and multiplied by a constant of 100,000 to yield the number of households below the federal poverty line per 100,000 state residents.
+
+There are 3 missing "NA" observations within the data. These pertain to Delaware with dates of 10/2015, 11/2015, and 12/2015 and are omitted from the data set. There are 5 observations where households on TANF are reported as 0: Idaho with dates of 11/2009 and 12/2009, and Missouri with dates of 1/2006, 2/2006, and 3/2006. These are identified as missing values in the raw data, and are omitted from the data set. The observations pertaining to Washington, D.C. are identified as high-range outliers and are omitted. Subsequent to omissions, the data consists of 11,392 rows.   
+
+```{r, results = F}
 #Restrict Year range: 
 Rang1 <- seq(2001, 2019, 1)
 final <- final %>% filter(year %in% Rang1)
@@ -59,9 +65,8 @@ kable(head(final))
 ```{r, results = F}
 dim(final)
 ```
-### Missing Data. 
 
-```{r, warning = F, message = F, echo = TRUE, comment = ''}
+```{r, warning = F, message = F, comment = '', results = F}
 #Missing variables.
 #Code is taken from https://jenslaufer.com/data/analysis/visualize_missing_values_with_ggplot.html (for the subsequent three visualizations).  
 MISSINGVALS <- final %>%
@@ -104,13 +109,21 @@ CountPlot <- ggplot() + geom_histogram(aes(x = final$scale_tanf_fams), fill = "#
 CountPlot
 ```
 
-```{r, warning = F, message = F}
+The distribution of the outcome variable of interest is presented above. The number of households on TANF by state is a discrete count variable, but approximate Normality is assumed under sufficient number of observations. The data is skewed right.
+
+Two control variables are included within the data: state unemployment rate and the number of households below the federal poverty line per 100,000 state residents. 
+
+```{r, warning = F, message = F, fig.height = 5, fig.width = 18}
 EmpPlot <- ggplot(data = final, mapping = aes(x = Date, y = unemp_rate, color = unemp_rate)) + geom_line() + theme_classic() + theme(legend.position = "none") + labs(x = 'Date', y = 'Unemployment Rate', title = 'Unemployment Rate: 2001 - 2019') + theme(plot.title = element_text(hjust = 0.5)) 
-EmpPlot
 
 FamPlot <- ggplot(data = final, mapping = aes(x = Date, y = scale_num_below_fpl)) + geom_line(color = 'darkgray') + stat_smooth(geom = 'line', method = 'lm', color = '#364C54', size = 2, alpha = 0.7) + theme_classic() + theme(legend.position = "none") + labs(x = 'Date', y = 'Number of Families Below Federal Poverty Level \n Scaled to 100,000', title = 'Number of Families Below Federal Poverty Level \n Scaled to 100,000: 2001 - 2019') + theme(plot.title = element_text(hjust = 0.5)) 
-FamPlot
+
+grid.arrange(EmpPlot, FamPlot, nrow = 1, ncol = 2)
 ```
+
+The unemployment rate across all states displays varying time trends, emphasized by a significant increase in unemployment rate under the Great Recession. The number of households below the federal poverty line per 100,000 state residents does not display a significant linear trend across the included states.
+
+To further define potential relationships within the data, a correlation heatmap is generated.
 
 ```{r, fig.width = 10, warning = F, message = F}
 keep <- c('scale_tanf_fams', 'unemp_rate', 'scale_num_below_fpl')
@@ -120,6 +133,8 @@ colnames(Data3) <- c('TANF Families', 'Unemp. Rate', 'Families Below FPL')
 M <- cor(Data3)
 Correlation <- corrplot(M, method="circle", type = 'upper', col=colorRampPalette(c('navy', "lightblue", '#D7E8C4'))(200), addCoef.col = "black", tl.cex = 0.8, tl.col = 'black')
 ```
+
+The correlation heatmap indicates that no issues of multicollinearity are present within the data: a general criterion for the presence of multicollinearity is an absolute correlation coefficient greater than 0.70 among two or more feature variables. A modest positive correlation of 0.25 is observed between the number of households on TANF per 100,000 state residents and the number of households below the federal poverty line per 100,000 state residents. The correlation between the number of households on TANF per 100,000 state residents and unemployment rate is -0.01, indicating that unemployment rate likely does not contribute significant information for the prediction of the number of households on TANF per 100,000 state residents. 
 
 # Identification of Policy States. 
 
@@ -183,12 +198,14 @@ CList <- c('Kentucky', 'South Carolina')
 cols <- c("Tennessee" = '#364C54', "Control Region" = "darkgray")
 TCCon <- final %>% filter(state %in% CList)
 PlotEmp <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = unemp_rate, color = 'Control Region')) + geom_line(data = TCTemp, mapping = aes(x = Date, y = unemp_rate, color = 'Tennessee'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'State Unemployment Rate', title = 'State Unemployment Rate Trend \n Tennessee and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)  
+
+PlotFam <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Control Region')) + geom_smooth(data = TCTemp, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Tennessee'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'Scaled Families below the FPL', title = 'Scaled Families below the FPL Trend \n Tennessee and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)
 ```
 
 ```{r, warning = F, message = F, fig.height = 3, fig.width = 12}
 PlotP <- ggplot() + geom_boxplot(data = TC, mapping = aes(y = scale_num_below_fpl, fill = state)) + theme_classic() + scale_fill_brewer(name = 'State', palette="Blues") + labs(y = 'Families Below the Federal Poverty Line \n Per Capita', title = 'Boxplot of Families Below the Federal Poverty Line Per Capita \n by State') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") 
 
-grid.arrange(PlotEmp, PlotP, ncol = 2, nrow = 1)
+grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
 ```
 
 ```{r}
@@ -212,7 +229,7 @@ us_states$TNRegion <- as.factor(InterList)
 
 pTN <- ggplot(data = us_states,
             aes(x = long, y = lat,
-                group = group, fill = TNRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'Tennessee and Control State of South Carolina') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('Tennessee', 'Control State: \n South Carolina', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
+                group = group, fill = TNRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'Tennessee and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('Tennessee', 'Control Region', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
 ```
 
 ```{r}
@@ -230,24 +247,20 @@ ControlPost <- R1 %>% filter(Date >= '2014-10-01')
 
 ```{r, warning = F, message = F}
 #Visualize simple time trend of TANF families. 
-cols <- c("Tennessee" = '#364C54', "Control State: South Carolina" = "#BCD2CB")
-RegInit <- ggplot() + geom_line(TNPre, mapping = aes(x = Date, y = scale_tanf_fams, group = 1),
-  color = "darkgray") + stat_smooth(TNPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
+cols <- c("Tennessee" = '#364C54', "Control Region" = "#BCD2CB")
+RegInit <- ggplot() + stat_smooth(TNPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
   color = "darkgray", size = 0.20, alpha = 0.75, 
-  method = "lm") + geom_line(TNPost, mapping = aes(x = Date, y = scale_tanf_fams, group = 1),
-  color = "darkgray") + stat_smooth(TNPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
+  method = "lm") + stat_smooth(TNPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
   color = "darkgray", size = 0.20, alpha = 0.75,   
-  method = "lm") + geom_line(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, group = 1),
-  color = "darkgray") + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control State: South Carolina', group = 1),
+  method = "lm") + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
   color = "darkgray", size = 0.20,
   method = "lm"
   ) + geom_vline(xintercept = as.Date('2014-07-01'), linetype="dashed", 
                 color = "black", size=0.50) + geom_vline(xintercept = as.Date('2014-10-01'), linetype="dashed", 
-                color = "black", size=0.50) + geom_line(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, group = 1),
-  color = "darkgray") + stat_smooth(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control State: South Carolina', group = 1),
+                color = "black", size=0.50) + stat_smooth(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
   color = "darkgray", size = 0.20, 
   method = "lm"
-  ) + labs(x = 'Date', y = 'Percent of Families on TANF', title = 'Linear Time Trends for Percent of Families on TANF: \n Tennessee and Control State') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
+  ) + labs(x = 'Date', y = 'Scaled Number of Families on TANF', title = 'Linear Time Trends for Scaled Number of Families on TANF: \n Tennessee and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
 ```
 
 ```{r, fig.height = 3, fig.width = 12, warning = F, message = F}
@@ -256,7 +269,7 @@ grid.arrange(pTN, RegInit, ncol = 2, nrow = 1)
 
 ```{r}
 #Now, make a new dataframe with all relevant states: 
-StatesListTN <- c('Tennessee', 'South Carolina')
+StatesListTN <- c('Tennessee', 'South Carolina', 'Kentucky')
 TNData <- final %>% filter(state %in% StatesListTN)
 
 #Treatment/Control state indicator: 
@@ -310,71 +323,165 @@ QQ2 <- ggplot(Res, aes(sample = Residual)) + stat_qq(color = '#364C54', alpha = 
 grid.arrange(ThisPlot, QQ2, ncol = 2, nrow = 1)
 ```
 
-```{r}
-All <- c('Michigan', 'Wisconsin', 'Illinois', 'Indiana', 'Ohio', 'Iowa', 'Minnesota', 'Pennsylvania', 'South Carolina', 'New York')
-Test <- final %>% filter(state %in% All)
+### Case: Michigan. 
 
-ggplot() + geom_line(data = Test, mapping= aes(x = Date, y = scale_tanf_fams, color = state))
+Policy Date: 12/2014. 
+
+Control Region: Indiana, Illinois.
+
+```{r}
+TCTemp <- final %>% filter(state == 'Michigan')
+CList <- c('Indiana', 'Illinois')
+cols <- c("Michigan" = '#364C54', "Control Region" = "darkgray")
+TCCon <- final %>% filter(state %in% CList)
+PlotEmp <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = unemp_rate, color = 'Control Region')) + geom_line(data = TCTemp, mapping = aes(x = Date, y = unemp_rate, color = 'Michigan'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'State Unemployment Rate', title = 'State Unemployment Rate Trend \n Michigan and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)  
+
+PlotFam <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Control Region')) + geom_smooth(data = TCTemp, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Michigan'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'Scaled Families below the FPL', title = 'Scaled Families below the FPL Trend \n Michigan and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)
 ```
 
-
-
-
-### Case: Wisconsin. 
-
-Policy Date: 11/2015. 
-
-Control Region: Ohio, Pennsylvania, New York.
+```{r, warning = F, message = F, fig.height = 3, fig.width = 12}
+grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
+```
 
 ```{r}
-Region1Overall <- c('Ohio', 'Pennsylvania', 'New York')
+#Visualize Michigan and Controls geographically: 
+Region1Overall <- c('Indiana', 'Illinois')
+
+InterList <- c()
+for (i in us_states$region) {
+  if (i == 'Michigan') {
+    InterList <- c(InterList, 1)
+  }
+  else if (i %in% Region1Overall) {
+    InterList <- c(InterList, 2)
+  }
+  else {
+    InterList <- c(InterList, 3)
+  }
+}
+
+us_states$TNRegion <- as.factor(InterList) 
+
+pTN <- ggplot(data = us_states,
+            aes(x = long, y = lat,
+                group = group, fill = TNRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'Michigan and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('Michigan', 'Control Region', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
+```
+
+```{r}
+Region1Overall <- c('Indiana', 'Illinois')
 R1 <- final %>% filter(state %in% Region1Overall) 
 
-TN <- final %>% filter(state == 'Wisconsin') 
+TN <- final %>% filter(state == 'Michigan') 
 
 #Define pre and post time periods by breakpoint: 
-TNPre <- TN %>% filter(Date <= '2015-11-01')
-ControlPre <- R1 %>% filter(Date <= '2015-11-01')
+TNPre <- TN %>% filter(Date <= '2014-12-01')
+ControlPre <- R1 %>% filter(Date <= '2014-12-01')
 
-TNPost <- TN %>% filter(Date >= '2016-01-01')
-ControlPost <- R1 %>% filter(Date >= '2016-01-01')
+TNPost <- TN %>% filter(Date >= '2015-02-01')
+ControlPost <- R1 %>% filter(Date >= '2015-02-01')
 ```
 
 ```{r, warning = F, message = F}
 #Visualize simple time trend of TANF families. 
-cols <- c("Tennessee" = '#364C54', "Control State: South Carolina" = "#BCD2CB")
-RegInit <- ggplot() + geom_line(TNPre, mapping = aes(x = Date, y = scale_tanf_fams, group = 1),
-  color = "darkgray") + stat_smooth(TNPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
+cols <- c("Michigan" = '#364C54', "Control Region" = "#BCD2CB")
+RegInit <- ggplot() + stat_smooth(TNPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Michigan', group = 1),
   color = "darkgray", size = 0.20, alpha = 0.75, 
-  method = "lm") + geom_line(TNPost, mapping = aes(x = Date, y = scale_tanf_fams, group = 1),
-  color = "darkgray") + stat_smooth(TNPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
+  method = "lm") + stat_smooth(TNPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Michigan', group = 1),
   color = "darkgray", size = 0.20, alpha = 0.75,   
-  method = "lm") + geom_line(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, group = 1),
-  color = "darkgray") + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control State: South Carolina', group = 1),
+  method = "lm") + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
   color = "darkgray", size = 0.20,
   method = "lm"
-  ) + geom_vline(xintercept = as.Date('2014-07-01'), linetype="dashed", 
-                color = "black", size=0.50) + geom_vline(xintercept = as.Date('2014-10-01'), linetype="dashed", 
-                color = "black", size=0.50) + geom_line(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, group = 1),
-  color = "darkgray") + stat_smooth(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control State: South Carolina', group = 1),
+  ) + geom_vline(xintercept = as.Date('2014-12-01'), linetype="dashed", 
+                color = "black", size=0.50) + geom_vline(xintercept = as.Date('2015-02-01'), linetype="dashed", 
+                color = "black", size=0.50) + stat_smooth(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
   color = "darkgray", size = 0.20, 
   method = "lm"
-  ) + labs(x = 'Date', y = 'Percent of Families on TANF', title = 'Linear Time Trends for Percent of Families on TANF: \n Tennessee and Control State') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
-RegInit
+  ) + labs(x = 'Date', y = 'Scaled Number of Families on TANF', title = 'Linear Time Trends for Scaled Number of Families on TANF: \n Michigan and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
+```
+
+```{r, fig.height = 3, fig.width = 12, warning = F, message = F}
+grid.arrange(pTN, RegInit, ncol = 2, nrow = 1)
 ```
 
 ```{r}
-All <- c('Utah', 'New Mexico', 'Nevada', 'California', 'Idaho', 'Wyoming', 'Colorado', 'Arizona')
-Test <- final %>% filter(state %in% All)
+#Now, make a new dataframe with all relevant states: 
+StatesListTN <- c('Michigan', 'Indiana', 'Illinois')
+TNData <- final %>% filter(state %in% StatesListTN)
 
-ggplot() + geom_line(data = Test, mapping = aes(x = Date, y = scale_tanf_fams,color = state))
+#Treatment/Control state indicator: 
+P <- c()
+for (k in TNData$state){
+  if (k == 'Michigan') {
+    P <- c(P, 1)
+  }
+  else {
+    P <- c(P, 0)
+  }
+}
+
+TNData$Drug_Law <- as.factor(P)
+
+#Pre Post indicator: 
+PList1 <- c()
+Enact_Date <- as.Date('2014-12-01')
+for (i in TNData$Date){
+  if (i > Enact_Date){
+    PList1 <- c(PList1, 1)
+  }
+  else {
+    PList1 <- c(PList1, 0)
+  }
+}
+
+TNData$Post_Ind <- as.factor(PList1)
+TNData$state <- as.factor(TNData$state)
 ```
 
-Colorado, New Mexico. 
+```{r, comment = ''}
+#Fixed Effects DID model: 
+TNReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = TNData)
+
+summary(TNReg)
+```
+```{r, fig.height = 2.5, fig.width = 10, fig.align = 'center'}
+#Model diagnostics plots: 
+Fitted <- TNReg$fitted.values[,1]
+Res <- TNReg$residuals[,1]
+D <- data.frame(Fitted = Fitted, Residuals = Res)
+
+ThisPlot <- ggplot(data = D, mapping = aes(x = Fitted, y = Residuals)) + geom_point(color = '#364C54', alpha = 0.60) + geom_hline(yintercept = 0, color = 'darkred', linetype = 'dashed') + labs(x = 'Fitted', y = 'Residuals', title = 'Residuals vs. Fitted') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
+
+Res <- as.data.frame(Res)
+colnames(Res) <- c('Residual')
+
+QQ2 <- ggplot(Res, aes(sample = Residual)) + stat_qq(color = '#364C54', alpha = 0.60) + stat_qq_line(color = 'darkred') + labs(x = 'Theoretical', y= 'Sample', title = 'Normal Q-Q Plot') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
+
+grid.arrange(ThisPlot, QQ2, ncol = 2, nrow = 1)
+```
+
+### Case: Utah. 
+
+Policy Date: 03/2012. 
+
+Control Region: Colorado, New Mexico, Nevada. 
+
+```{r}
+TCTemp <- final %>% filter(state == 'Utah')
+CList <- c('Colorado', 'New Mexico', 'Nevada')
+cols <- c("Utah" = '#364C54', "Control Region" = "darkgray")
+TCCon <- final %>% filter(state %in% CList)
+PlotEmp <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = unemp_rate, color = 'Control Region')) + geom_line(data = TCTemp, mapping = aes(x = Date, y = unemp_rate, color = 'Utah'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'State Unemployment Rate', title = 'State Unemployment Rate Trend \n Utah and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)  
+
+PlotFam <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Control Region')) + geom_smooth(data = TCTemp, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Utah'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'Scaled Families below the FPL', title = 'Scaled Families below the FPL Trend \n Utah and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)
+```
+
+```{r, warning = F, message = F, fig.height = 3, fig.width = 12}
+grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
+```
 
 ```{r}
 #Visualize TN and Controls geographically: 
-Region1Overall <- c('Colorado', 'New Mexico')
+Region1Overall <- c('Colorado', 'New Mexico', 'Nevada')
 
 InterList <- c()
 for (i in us_states$region) {
@@ -393,11 +500,11 @@ us_states$UtahRegion <- as.factor(InterList)
 
 pUtah <- ggplot(data = us_states,
             aes(x = long, y = lat,
-                group = group, fill = UtahRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'Utah and Control State of New Mexico') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('Utah', 'Control State: \n New Mexico', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
+                group = group, fill = UtahRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'Utah and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('Utah', 'Control Region', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
 ```
 
 ```{r}
-Region1 <- c('New Mexico', 'Colorado', 'Nevada')
+Region1 <- c('Colorado', 'New Mexico', 'Nevada')
 
 R1 <- final %>% filter(state %in% Region1) 
 
@@ -415,20 +522,20 @@ ControlPost <- R1 %>% filter(Date >= '2012-06-01')
 
 ```{r, message = F, warning = F}
 cols <- c("Utah" = '#364C54', "Control Region" = "#BCD2CB")
-RegInit <- ggplot() + geom_line(WVPre, mapping = aes(x = Date, y = scale_tanf_fams), color = 'darkgray') + stat_smooth(WVPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Utah', group = 1),
+RegInit <- ggplot() + stat_smooth(WVPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Utah', group = 1),
   color = "darkgray", size = 0.20,
-  method = "lm") + geom_line(WVPost, mapping = aes(x = Date, y = scale_tanf_fams), color = 'darkgray') + stat_smooth(WVPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Utah', group = 1),
+  method = "lm") + stat_smooth(WVPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Utah', group = 1),
   color = "darkgray", size = 0.20, 
   method = "lm"
-  ) + geom_line(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams), color = 'darkgray') + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
+  ) + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
   color = "darkgray", size = 0.20,
   method = "lm"
   ) + geom_vline(xintercept = as.Date('2012-03-01'), linetype="dashed", 
                 color = "black", size=0.50) + geom_vline(xintercept = as.Date('2012-06-01'), linetype="dashed", 
-                color = "black", size=0.50) + geom_line(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams), color = 'darkgray') + stat_smooth(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
+                color = "black", size=0.50) + stat_smooth(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
   color = "darkgray", size = 0.20, 
   method = "lm"
-  ) + labs(x = 'Date', y = 'Number of Families on TANF', title = 'Linear Time Trends for Number of Families on TANF: \n Utah and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
+  ) + labs(x = 'Date', y = 'Scaled Number of Families on TANF', title = 'Linear Time Trends for Scaled Number of Families on TANF: \n Utah and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
 ```
 
 ```{r, fig.height = 3, fig.width = 12, warning = F, message = F}
@@ -475,7 +582,21 @@ UtahReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | 
 
 summary(UtahReg)
 ```
+```{r, fig.height = 2.5, fig.width = 10, fig.align = 'center'}
+#Model diagnostics plots: 
+Fitted <- UtahReg$fitted.values[,1]
+Res <- UtahReg$residuals[,1]
+D <- data.frame(Fitted = Fitted, Residuals = Res)
 
+ThisPlot <- ggplot(data = D, mapping = aes(x = Fitted, y = Residuals)) + geom_point(color = '#364C54', alpha = 0.60) + geom_hline(yintercept = 0, color = 'darkred', linetype = 'dashed') + labs(x = 'Fitted', y = 'Residuals', title = 'Residuals vs. Fitted') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
+
+Res <- as.data.frame(Res)
+colnames(Res) <- c('Residual')
+
+QQ2 <- ggplot(Res, aes(sample = Residual)) + stat_qq(color = '#364C54', alpha = 0.60) + stat_qq_line(color = 'darkred') + labs(x = 'Theoretical', y= 'Sample', title = 'Normal Q-Q Plot') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
+
+grid.arrange(ThisPlot, QQ2, ncol = 2, nrow = 1)
+```
 
 ### Case: North Carolina.
 
@@ -484,23 +605,17 @@ Policy Date: 07/2013.
 Control Region: Kentucky, South Carolina, Indiana. 
 
 ```{r}
-StatesList <- c('North Carolina', 'Kentucky', 'South Carolina', 'Indiana')
-TC <- final %>% filter(state %in% StatesList)
-```
-
-```{r, warning = F, message = F, fig.height = 3, fig.width = 12}
-#Comparison of unemployment rate: 
-TCNC <- final %>% filter(state == 'North Carolina')
+TCTemp <- final %>% filter(state == 'North Carolina')
 CList <- c('Kentucky', 'South Carolina', 'Indiana')
 cols <- c("North Carolina" = '#364C54', "Control Region" = "darkgray")
 TCCon <- final %>% filter(state %in% CList)
-PlotEmp <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = unemp_rate, color = 'Control Region')) + geom_line(data = TCNC, mapping = aes(x = Date, y = unemp_rate, color = 'North Carolina'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'State Unemployment Rate', title = 'State Unemployment Rate Trend \n North Carolina and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)  
+PlotEmp <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = unemp_rate, color = 'Control Region')) + geom_line(data = TCTemp, mapping = aes(x = Date, y = unemp_rate, color = 'North Carolina'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'State Unemployment Rate', title = 'State Unemployment Rate Trend \n North Carolina and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)  
 
-#Comparison of Num below FPL: 
-PlotP <- ggplot() + geom_boxplot(data = TC, mapping = aes(y = scale_num_below_fpl, fill = state)) + theme_classic() + scale_fill_brewer(name = 'State', palette="Blues") + labs(y = 'Families Below the Federal Poverty Line \n Per Capita', title = 'Boxplot of Families Below the Federal Poverty Line Per Capita \n by State') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") 
+PlotFam <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Control Region')) + geom_smooth(data = TCTemp, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'North Carolina'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'Scaled Families below the FPL', title = 'Scaled Families below the FPL Trend \n North Carolina and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)
+```
 
-#Display: 
-grid.arrange(PlotEmp, PlotP, ncol = 2, nrow = 1)
+```{r, warning = F, message = F, fig.height = 3, fig.width = 12}
+grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
 ```
 
 ```{r}
@@ -527,7 +642,7 @@ us_states$NCRegion <- as.factor(InterList)
 #Visualize state and controls geographically: 
 p <- ggplot(data = us_states,
             aes(x = long, y = lat,
-                group = group, fill = NCRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'North Carolina and Control States') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('North Carolina', 'Control States', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
+                group = group, fill = NCRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'North Carolina and Control States') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('North Carolina', 'Control Region', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
 ```
 
 ```{r}
@@ -551,18 +666,18 @@ ControlPost <- R1 %>% filter(Date >= '2013-10-01')
 cols <- c("North Carolina" = '#364C54', "Control Region" = "#BCD2CB")
 RegInit <- ggplot() + stat_smooth(WVPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'North Carolina', group = 1),
   color = "darkgray", size = 0.20,
-  method = "loess") + stat_smooth(WVPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'North Carolina', group = 1),
+  method = "lm") + stat_smooth(WVPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'North Carolina', group = 1),
   color = "darkgray", size = 0.20, 
-  method = "loess"
+  method = "lm"
   ) + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
   color = "darkgray", size = 0.20,
-  method = "loess"
+  method = "lm"
   ) + geom_vline(xintercept = as.Date('2013-07-01'), linetype="dashed", 
                 color = "black", size=0.50) + geom_vline(xintercept = as.Date('2013-10-01'), linetype="dashed", 
                 color = "black", size=0.50) + stat_smooth(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
   color = "darkgray", size = 0.20, 
-  method = "loess"
-  ) + labs(x = 'Date', y = 'Percent of Families on TANF', title = 'Linear Time Trends for Percent of Families on TANF: \n North Carolina and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
+  method = "lm"
+  ) + labs(x = 'Date', y = 'Scaled Number of Families on TANF', title = 'Linear Time Trends for Scaled Number of Families on TANF: \n North Carolina and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
 ```
 
 ```{r, fig.height = 3, fig.width = 12, warning = F, message = F}
@@ -601,7 +716,7 @@ TC$state <- as.factor(TC$state)
 
 ```{r, comment = ''}
 #Fixed Effects DID model: 
-NCReg <- felm(scale_tanf_fams ~ drug_law + Post_Ind + scale_num_below_fpl + unemp_rate + drug_law*Post_Ind | year_cat + state, data = TC)
+NCReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = TC)
 
 summary(NCReg)
 ```
@@ -609,143 +724,6 @@ summary(NCReg)
 #Model diagnostics: 
 Fitted <- NCReg$fitted.values[,1]
 Res <- NCReg$residuals[,1]
-D <- data.frame(Fitted = Fitted, Residuals = Res)
-
-ThisPlot <- ggplot(data = D, mapping = aes(x = Fitted, y = Residuals)) + geom_point(color = '#364C54', alpha = 0.60) + geom_hline(yintercept = 0, color = 'darkred', linetype = 'dashed') + labs(x = 'Fitted', y = 'Residuals', title = 'Residuals vs. Fitted') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
-
-Res <- as.data.frame(Res)
-colnames(Res) <- c('Residual')
-
-QQ2 <- ggplot(Res, aes(sample = Residual)) + stat_qq(color = '#364C54', alpha = 0.60) + stat_qq_line(color = 'darkred') + labs(x = 'Theoretical', y= 'Sample', title = 'Normal Q-Q Plot') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
-
-grid.arrange(ThisPlot, QQ2, ncol = 2, nrow = 1)
-```
-
-# Case: Alabama.
-
-Policy Date: 04/2014. 
-
-Control Region: Colorado, New Mexico, Ohio. 
-
-```{r}
-StatesList <- c('Alabama', 'Colorado', 'New Mexico', 'Ohio')
-AL <- final %>% filter(state %in% StatesList)
-```
-
-```{r}
-TCTemp <- final %>% filter(state == 'Alabama')
-CList <- c('Colorado', 'New Mexico', 'Ohio')
-cols <- c('Alabama' = '#364C54', "Control Region" = "darkgray")
-TCCon <- final %>% filter(state %in% CList)
-PlotEmp <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = unemp_rate, color = 'Control Region')) + geom_line(data = TCTemp, mapping = aes(x = Date, y = unemp_rate, color = 'Alabama'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'State Unemployment Rate', title = 'State Unemployment Rate Trend \n Alabama and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)  
-```
-
-```{r, warning = F, message = F, fig.height = 3, fig.width = 12}
-PlotP <- ggplot() + geom_boxplot(data = AL, mapping = aes(y = scale_num_below_fpl, fill = state)) + theme_classic() + scale_fill_brewer(name = 'State', palette="Blues") + labs(y = 'Families Below the Federal Poverty Line \n Per Capita', title = 'Boxplot of Families Below the Federal Poverty Line Per Capita \n by State') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") 
-
-grid.arrange(PlotEmp, PlotP, ncol = 2, nrow = 1)
-```
-
-```{r}
-Region1Overall <- c('Colorado', 'New Mexico', 'Ohio')
-
-InterList <- c()
-for (i in us_states$region) {
-  if (i == 'Alabama') {
-    InterList <- c(InterList, 1)
-  }
-  else if (i %in% Region1Overall) {
-    InterList <- c(InterList, 2)
-  }
-  else {
-    InterList <- c(InterList, 3)
-  }
-}
-
-us_states$ALRegion <- as.factor(InterList) 
-```
-
-```{r}
-p <- ggplot(data = us_states,
-            aes(x = long, y = lat,
-                group = group, fill = ALRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'Alabama and Control States') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('Alabama', 'Control States', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
-```
-
-```{r}
-Region1 <- c('Colorado', 'New Mexico', 'Ohio')
-
-R1 <- final %>% filter(state %in% Region1) 
-
-AL <- final %>% filter(state == 'Alabama') 
-
-ALPre <- AL %>% filter(Date <= '2014-04-01')
-ControlPre <- R1 %>% filter(Date <= '2014-04-01')
-
-#Define breakpoint. 
-
-ALPost <- AL %>% filter(Date >= '2014-07-01')
-ControlPost <- R1 %>% filter(Date >= '2014-07-01')
-```
-
-```{r, message = F, warning = F}
-cols <- c("Alabama" = '#364C54', "Control Region" = "#BCD2CB")
-RegInit <- ggplot() + stat_smooth(ALPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Alabama', group = 1),
-  color = "darkgray", size = 0.20,
-  method = "loess") + stat_smooth(ALPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Alabama', group = 1),
-  color = "darkgray", size = 0.20, 
-  method = "loess"
-  ) + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
-  color = "darkgray", size = 0.20,
-  method = "loess"
-  ) + geom_vline(xintercept = as.Date('2014-04-01'), linetype="dashed", 
-                color = "black", size=0.50) + geom_vline(xintercept = as.Date('2014-07-01'), linetype="dashed", 
-                color = "black", size=0.50) + stat_smooth(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
-  color = "darkgray", size = 0.20, 
-  method = "loess"
-  ) + labs(x = 'Date', y = 'Percent of Families on TANF', title = 'Linear Time Trends for Percent of Families on TANF: \n Alabama and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
-```
-
-```{r, fig.height = 3, fig.width = 12, warning = F, message = F}
-grid.arrange(p, RegInit, ncol = 2, nrow = 1)
-```
-
-```{r}
-AL <- final %>% filter(state %in% StatesList)
-PTC <- c()
-for (k in AL$state){
-  if (k == 'Alabama') {
-    PTC <- c(PTC, 1)
-  }
-  else {
-    PTC <- c(PTC, 0)
-  }
-}
-
-AL$State_Ind <- as.factor(PTC)
-
-PList <- c()
-Enact_Date <- as.Date('2014-04-01')
-for (i in AL$Date){
-  if (i > Enact_Date){
-    PList <- c(PList, 1)
-  }
-  else {
-    PList <- c(PList, 0)
-  }
-}
-
-AL$Post_Ind <- as.factor(PList)
-AL$state <- as.factor(TC$state)
-```
-
-```{r, comment = ''}
-ALReg <- felm(scale_tanf_fams ~ drug_law + Post_Ind + scale_num_below_fpl + unemp_rate + drug_law*Post_Ind | year_cat + state, data = AL)
-
-summary(ALReg)
-```
-```{r, fig.height = 2.5, fig.width = 10, fig.align = 'center'}
-Fitted <- ALReg$fitted.values[,1]
-Res <- ALReg$residuals[,1]
 D <- data.frame(Fitted = Fitted, Residuals = Res)
 
 ThisPlot <- ggplot(data = D, mapping = aes(x = Fitted, y = Residuals)) + geom_point(color = '#364C54', alpha = 0.60) + geom_hline(yintercept = 0, color = 'darkred', linetype = 'dashed') + labs(x = 'Fitted', y = 'Residuals', title = 'Residuals vs. Fitted') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
