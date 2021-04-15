@@ -307,9 +307,12 @@ print(final_lag)
 #########
 # Robustness check regression part 2
 ########
-summary(basic_rob2<-lm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate,
+summary(basic_rob2<-lm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate + (state) + (year_cat),
                          data=final_lag)) 
 
+G <- length(unique(final$state))
+c <- G/(G - 1)
+coeftest(basic,c * vcovHC(basic, type = "HC1", cluster = "group"))
 ```
 
 ```{r}
@@ -324,6 +327,7 @@ robust.order <- c("drug_law", "scale_num_below_fpl", "unemp_rate", "^Constant$")
 robust.label =  c( "Drug Law (1=yes/0=no)",
                    "Number Below Federal Poverty Level (per 100,000)",
                    "Unemployment Rate (in %)", "Constant") 
+
 setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifying DS/project/Policy-Stats-Team/30_results")
 
 # Set up table with all three basic analyses components
@@ -333,7 +337,6 @@ stargazer(basic, basic_rob1, basic_rob2,
           out = "table1.html",
           omit.stat=c("f", "ser"),
           style = "apsr", 
-          order=paste0("^", robust.order , "$"), 
           digits=4, notes.align="l", 
           notes.append=FALSE,
           dep.var.labels ="",
