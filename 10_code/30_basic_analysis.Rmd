@@ -97,211 +97,132 @@ summary(basic_rob1<-lm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_
 ##############
 
 # Subset Alabama
-class(final$datetime)
-alabama <- subset(final, state=="Alabama",
-select=state:scale_num_below_fpl)
-
-alabama_lag <- subset(alabama, datetime=="2013-10-01" | datetime=="2013-11-01" 
-                      | datetime=="2013-12-01" | datetime=="2014-01-01" 
-                      | datetime=="2014-02-01" | datetime=="2014-03-01"
-                      | datetime=="2014-04-01" | datetime=="2014-05-01"
-                      | datetime=="2014-06-01" | datetime=="2014-07-01"
-                      | datetime=="2014-08-01" | datetime=="2014-09-01"
-                      | datetime=="2014-10-01",
-select=state:scale_num_below_fpl)
+final1<-final[!(final$state=="Alabama" & final$datetime=="2014-04-01"),]
+final2<-final1[!(final1$state=="Alabama" & final1$datetime=="2014-05-01"),]
+final3<-final2[!(final2$state=="Alabama" & final2$datetime=="2014-06-01"),]
+final4<-final3[!(final3$state=="Alabama" & final3$datetime=="2014-07-01"),]
+final5<-final4[!(final4$state=="Alabama" & final4$datetime=="2014-08-01"),]
+final6<-final5[!(final5$state=="Alabama" & final5$datetime=="2014-09-01"),]
 
 
 # Subset Arizona
-arizona <- subset(final, state=="Arizona",
-select=state:scale_num_below_fpl)
+final7<-final6[!(final6$state=="Arizona" & final6$datetime=="2011-04-01"),]
+final8<-final7[!(final7$state=="Arizona" & final7$datetime=="2011-05-01"),]
+final9<-final8[!(final8$state=="Arizona" & final8$datetime=="2011-06-01"),]
+final10<-final9[!(final9$state=="Arizona" & final9$datetime=="2011-07-01"),]
+final11<-final10[!(final10$state=="Arizona" & final10$datetime=="2011-08-01"),]
+final12<-final11[!(final11$state=="Arizona" & final11$datetime=="2011-09-01"),]
 
-arizona_lag <- subset(arizona, datetime=="2010-10-01" | datetime=="2010-11-01" 
-                      | datetime=="2010-12-01" | datetime=="2011-01-01" 
-                      | datetime=="2011-02-01" | datetime=="2011-03-01"
-                      | datetime=="2011-04-01" | datetime=="2011-05-01"
-                      | datetime=="2011-06-01" | datetime=="2011-07-01"
-                      | datetime=="2011-08-01" | datetime=="2011-09-01"
-                      | datetime=="2011-10-01",
-select=state:scale_num_below_fpl)
 
 # Subset Arkansas
-arkansas <- subset(final, state=="Arkansas",
-select=state:scale_num_below_fpl)
-
-arkansas_lag <- subset(arkansas, datetime=="2014-10-01" | datetime=="2014-11-01" 
-                      | datetime=="2014-12-01" | datetime=="2015-01-01" 
-                      | datetime=="2015-02-01" | datetime=="2015-03-01"
-                      | datetime=="2015-04-01" | datetime=="2015-05-01"
-                      | datetime=="2015-06-01" | datetime=="2015-07-01"
-                      | datetime=="2015-08-01" | datetime=="2015-09-01"
-                      | datetime=="2015-10-01",
-select=state:scale_num_below_fpl)
+final13<-final12[!(final12$state=="Arkansas" & final12$datetime=="2015-04-01"),]
+final14<-final13[!(final13$state=="Arkansas" & final13$datetime=="2015-05-01"),]
+final15<-final14[!(final14$state=="Arkansas" & final14$datetime=="2015-06-01"),]
+final16<-final15[!(final15$state=="Arkansas" & final15$datetime=="2015-07-01"),]
+final17<-final16[!(final16$state=="Arkansas" & final16$datetime=="2015-08-01"),]
+final18<-final17[!(final17$state=="Arkansas" & final17$datetime=="2015-09-01"),]
 
 # Subset Florida
-florida <- subset(final, state=="Florida",
-select=state:scale_num_below_fpl)
-
-florida_lag <- subset(florida, datetime=="2011-01-01" | datetime=="2011-02-01" 
-                      | datetime=="2011-03-01" | datetime=="2011-04-01" 
-                      | datetime=="2011-05-01" | datetime=="2011-06-01"
-                      | datetime=="2011-07-01" | datetime=="2011-08-01"
-                      | datetime=="2011-09-01" | datetime=="2011-10-01"
-                      | datetime=="2011-11-01" | datetime=="2011-12-01"
-                      | datetime=="2012-01-01",
-select=state:scale_num_below_fpl)
+final19<-final18[!(final18$state=="Florida" & final18$datetime=="2011-07-01"),]
+final20<-final19[!(final19$state=="Florida" & final19$datetime=="2011-08-01"),]
+final21<-final20[!(final20$state=="Florida" & final20$datetime=="2011-09-01"),]
+final22<-final21[!(final21$state=="Florida" & final21$datetime=="2011-10-01"),]
+final23<-final22[!(final22$state=="Florida" & final22$datetime=="2011-11-01"),]
+final24<-final23[!(final23$state=="Florida" & final23$datetime=="2011-12-01"),]
 
 # Subset Georgia
-georgia <- subset(final, state=="Georgia",
-select=state:scale_num_below_fpl)
-
-georgia_lag <- subset(georgia, datetime=="2012-01-01" | datetime=="2012-02-01" 
-                      | datetime=="2012-03-01" | datetime=="2012-04-01" 
-                      | datetime=="2012-05-01" | datetime=="2012-06-01"
-                      | datetime=="2012-07-01" | datetime=="2012-08-01"
-                      | datetime=="2012-09-01" | datetime=="2012-10-01"
-                      | datetime=="2012-11-01" | datetime=="2012-12-01"
-                      | datetime=="2013-01-01",
-select=state:scale_num_below_fpl)
+final25<-final24[!(final24$state=="Georgia" & final24$datetime=="2012-07-01"),]
+final26<-final25[!(final25$state=="Georgia" & final25$datetime=="2012-08-01"),]
+final27<-final26[!(final26$state=="Georgia" & final26$datetime=="2012-09-01"),]
+final28<-final27[!(final27$state=="Georgia" & final27$datetime=="2012-10-01"),]
+final29<-final28[!(final28$state=="Georgia" & final28$datetime=="2012-11-01"),]
+final30<-final29[!(final29$state=="Georgia" & final29$datetime=="2012-12-01"),]
 
 # Subset Kansas
-kansas <- subset(final, state=="Kansas",
-select=state:scale_num_below_fpl)
-
-kansas_lag <- subset(kansas, datetime=="2013-07-01" | datetime=="2013-08-01" 
-                      | datetime=="2013-09-01" | datetime=="2013-10-01" 
-                      | datetime=="2013-11-01" | datetime=="2013-12-01"
-                      | datetime=="2014-01-01" | datetime=="2014-02-01"
-                      | datetime=="2014-03-01" | datetime=="2014-04-01"
-                      | datetime=="2014-05-01" | datetime=="2014-06-01"
-                      | datetime=="2014-07-01",
-select=state:scale_num_below_fpl)
+final31<-final30[!(final30$state=="Kansas" & final30$datetime=="2014-01-01"),]
+final32<-final31[!(final31$state=="Kansas" & final31$datetime=="2014-02-01"),]
+final33<-final32[!(final32$state=="Kansas" & final32$datetime=="2014-03-01"),]
+final34<-final33[!(final33$state=="Kansas" & final33$datetime=="2014-04-01"),]
+final35<-final34[!(final34$state=="Kansas" & final34$datetime=="2014-05-01"),]
+final36<-final35[!(final35$state=="Kansas" & final35$datetime=="2014-06-01"),]
 
 # Subset Michigan
-michigan <- subset(final, state=="Michigan",
-select=state:scale_num_below_fpl)
+final37<-final36[!(final36$state=="Michigan" & final36$datetime=="2014-12-01"),]
+final38<-final37[!(final37$state=="Michigan" & final37$datetime=="2015-01-01"),]
+final39<-final38[!(final38$state=="Michigan" & final38$datetime=="2015-02-01"),]
+final40<-final39[!(final39$state=="Michigan" & final39$datetime=="2015-03-01"),]
+final41<-final40[!(final40$state=="Michigan" & final40$datetime=="2015-04-01"),]
+final42<-final41[!(final41$state=="Michigan" & final41$datetime=="2015-05-01"),]
 
-michigan_lag <- subset(michigan, datetime=="2014-06-01" | datetime=="2014-07-01" 
-                      | datetime=="2014-08-01" | datetime=="2014-09-01" 
-                      | datetime=="2014-10-01" | datetime=="2014-11-01"
-                      | datetime=="2014-12-01" | datetime=="2015-01-01"
-                      | datetime=="2015-02-01" | datetime=="2015-03-01"
-                      | datetime=="2015-04-01" | datetime=="2015-05-01"
-                      | datetime=="2015-06-01",
-select=state:scale_num_below_fpl)
+# Subset Mississippi
+final43<-final42[!(final42$state=="Mississippi" & final42$datetime=="2014-07-01"),]
+final44<-final43[!(final43$state=="Mississippi" & final43$datetime=="2014-08-01"),]
+final45<-final44[!(final44$state=="Mississippi" & final44$datetime=="2014-09-01"),]
+final46<-final45[!(final45$state=="Mississippi" & final45$datetime=="2014-10-01"),]
+final47<-final46[!(final46$state=="Mississippi" & final46$datetime=="2014-11-01"),]
+final48<-final47[!(final47$state=="Mississippi" & final47$datetime=="2014-12-01"),]
 
-# Subset Mississippi 
-mississippi <- subset(final, state=="Mississippi",
-select=state:scale_num_below_fpl)
+# Subset Missouri
+final49<-final48[!(final48$state=="Missouri" & final48$datetime=="2011-08-01"),]
+final50<-final49[!(final49$state=="Missouri" & final49$datetime=="2011-09-01"),]
+final51<-final50[!(final50$state=="Missouri" & final50$datetime=="2011-10-01"),]
+final52<-final51[!(final51$state=="Missouri" & final51$datetime=="2011-11-01"),]
+final53<-final52[!(final52$state=="Missouri" & final52$datetime=="2011-12-01"),]
+final54<-final53[!(final53$state=="Missouri" & final53$datetime=="2012-01-01"),]
 
-mississippi_lag <- subset(mississippi, datetime=="2014-01-01" | datetime=="2014-02-01" 
-                      | datetime=="2014-03-01" | datetime=="2014-04-01" 
-                      | datetime=="2014-05-01" | datetime=="2014-06-01"
-                      | datetime=="2014-07-01" | datetime=="2014-08-01"
-                      | datetime=="2014-09-01" | datetime=="2014-10-01"
-                      | datetime=="2014-11-01" | datetime=="2014-12-01"
-                      | datetime=="2015-01-01",
-select=state:scale_num_below_fpl)
 
-# Subset Missouri 
-missouri <- subset(final, state=="Missouri",
-select=state:scale_num_below_fpl)
-
-missouri_flag <- subset(missouri, datetime=="2011-02-01" | datetime=="2011-03-01" 
-                      | datetime=="2011-04-01" | datetime=="2011-05-01" 
-                      | datetime=="2011-06-01" | datetime=="2011-07-01"
-                      | datetime=="2011-08-01" | datetime=="2011-09-01"
-                      | datetime=="2011-10-01" | datetime=="2011-11-01"
-                      | datetime=="2011-12-01" | datetime=="2012-01-01"
-                      | datetime=="2012-02-01",
-select=state:scale_num_below_fpl)
-
-# Subset North Carolina 
-nc <- subset(final, state=="North Carolina",
-select=state:scale_num_below_fpl)
-
-nc_flag <- subset(nc, datetime=="2013-01-01" | datetime=="2013-02-01" 
-                      | datetime=="2013-03-01" | datetime=="2013-04-01" 
-                      | datetime=="2013-05-01" | datetime=="2013-06-01"
-                      | datetime=="2013-07-01" | datetime=="2013-08-01"
-                      | datetime=="2013-09-01" | datetime=="2013-10-01"
-                      | datetime=="2013-11-01" | datetime=="2013-12-01"
-                      | datetime=="2014-01-01",
-select=state:scale_num_below_fpl)
+# Subset North Carolina
+final55<-final54[!(final54$state=="North Carolina" & final54$datetime=="2013-07-01"),]
+final56<-final55[!(final55$state=="North Carolina" & final55$datetime=="2013-08-01"),]
+final57<-final56[!(final56$state=="North Carolina" & final56$datetime=="2013-09-01"),]
+final58<-final57[!(final57$state=="North Carolina" & final57$datetime=="2013-10-01"),]
+final59<-final58[!(final58$state=="North Carolina" & final58$datetime=="2013-11-01"),]
+final60<-final59[!(final59$state=="North Carolina" & final59$datetime=="2013-12-01"),]
 
 # Subset Oklahoma
-oklahoma <- subset(final, state=="Oklahoma",
-select=state:scale_num_below_fpl)
+final61<-final60[!(final60$state=="Oklahoma" & final60$datetime=="2012-11-01"),]
+final62<-final61[!(final61$state=="Oklahoma" & final61$datetime=="2012-12-01"),]
+final63<-final62[!(final62$state=="Oklahoma" & final62$datetime=="2013-01-01"),]
+final64<-final63[!(final63$state=="Oklahoma" & final63$datetime=="2013-02-01"),]
+final65<-final64[!(final64$state=="Oklahoma" & final64$datetime=="2013-03-01"),]
+final66<-final65[!(final65$state=="Oklahoma" & final65$datetime=="2013-04-01"),]
 
-oklahoma_flag <- subset(oklahoma, datetime=="2012-05-01" | datetime=="2012-06-01" 
-                      | datetime=="2012-07-01" | datetime=="2012-08-01" 
-                      | datetime=="2012-09-01" | datetime=="2012-10-01"
-                      | datetime=="2012-11-01" | datetime=="2012-12-01"
-                      | datetime=="2013-01-01" | datetime=="2013-02-01"
-                      | datetime=="2013-03-01" | datetime=="2013-04-01"
-                      | datetime=="2013-05-01",
-select=state:scale_num_below_fpl)
-
-# Subset Tennesse
-tennessee <- subset(final, state=="Tennessee",
-select=state:scale_num_below_fpl)
-
-tennessee_flag <- subset(tennessee, datetime=="2014-01-01" | datetime=="2014-02-01" 
-                      | datetime=="2014-03-01" | datetime=="2014-04-01" 
-                      | datetime=="2014-05-01" | datetime=="2014-06-01"
-                      | datetime=="2014-07-01" | datetime=="2014-08-01"
-                      | datetime=="2014-09-01" | datetime=="2014-10-01"
-                      | datetime=="2014-11-01" | datetime=="2014-12-01"
-                      | datetime=="2015-01-01",
-select=state:scale_num_below_fpl)
+# Subset Tennessee
+final67<-final66[!(final66$state=="Tennessee" & final66$datetime=="2014-07-01"),]
+final68<-final67[!(final67$state=="Tennessee" & final67$datetime=="2014-08-01"),]
+final69<-final68[!(final68$state=="Tennessee" & final68$datetime=="2014-09-01"),]
+final70<-final69[!(final69$state=="Tennessee" & final69$datetime=="2014-10-01"),]
+final71<-final70[!(final70$state=="Tennessee" & final70$datetime=="2014-11-01"),]
+final72<-final71[!(final71$state=="Tennessee" & final71$datetime=="2014-12-01"),]
 
 # Subset Utah
-utah <- subset(final, state=="Utah",
-select=state:scale_num_below_fpl)
-
-utah_flag <- subset(utah, datetime=="2011-09-01" | datetime=="2011-10-01" 
-                      | datetime=="2011-11-01" | datetime=="2011-12-01" 
-                      | datetime=="2012-01-01" | datetime=="2012-02-01"
-                      | datetime=="2012-03-01" | datetime=="2012-04-01"
-                      | datetime=="2012-05-01" | datetime=="2012-06-01"
-                      | datetime=="2012-07-01" | datetime=="2012-08-01"
-                      | datetime=="2012-09-01",
-select=state:scale_num_below_fpl)
+final73<-final72[!(final72$state=="Utah" & final72$datetime=="2012-03-01"),]
+final74<-final73[!(final73$state=="Utah" & final73$datetime=="2012-04-01"),]
+final75<-final74[!(final74$state=="Utah" & final74$datetime=="2012-05-01"),]
+final76<-final75[!(final75$state=="Utah" & final75$datetime=="2012-06-01"),]
+final77<-final76[!(final76$state=="Utah" & final76$datetime=="2012-07-01"),]
+final78<-final77[!(final77$state=="Utah" & final77$datetime=="2012-08-01"),]
 
 # Subset West Virginia
-virginia <- subset(final, state=="West Virginia",
-select=state:scale_num_below_fpl)
-
-virginia_lag <- subset(virginia, datetime=="2016-06-01" | datetime=="2016-07-01" 
-                      | datetime=="2016-08-01" | datetime=="2016-09-01" 
-                      | datetime=="2016-10-01" | datetime=="2016-11-01"
-                      | datetime=="2016-12-01" | datetime=="2017-01-01"
-                      | datetime=="2017-02-01" | datetime=="2017-03-01"
-                      | datetime=="2017-04-01" | datetime=="2017-05-01"
-                      | datetime=="2017-06-01",
-select=state:scale_num_below_fpl)
+final79<-final78[!(final78$state=="West Virginia" & final78$datetime=="2016-12-01"),]
+final80<-final79[!(final79$state=="West Virginia" & final79$datetime=="2017-01-01"),]
+final81<-final80[!(final80$state=="West Virginia" & final80$datetime=="2017-02-01"),]
+final82<-final81[!(final81$state=="West Virginia" & final81$datetime=="2017-03-01"),]
+final83<-final82[!(final82$state=="West Virginia" & final82$datetime=="2017-04-01"),]
+final84<-final83[!(final83$state=="West Virginia" & final83$datetime=="2017-05-01"),]
 
 # Subset Wisconsin
-wisconsin <- subset(final, state=="Wisconsin",
-select=state:scale_num_below_fpl)
+final85<-final84[!(final84$state=="Wisconsin" & final84$datetime=="2015-11-01"),]
+final86<-final85[!(final85$state=="Wisconsin" & final85$datetime=="2015-12-01"),]
+final87<-final86[!(final86$state=="Wisconsin" & final86$datetime=="2016-01-01"),]
+final88<-final87[!(final87$state=="Wisconsin" & final87$datetime=="2016-02-01"),]
+final89<-final88[!(final88$state=="Wisconsin" & final88$datetime=="2016-03-01"),]
+final90<-final89[!(final89$state=="Wisconsin" & final89$datetime=="2016-04-01"),]
 
-wisconsin_flag <- subset(wisconsin, datetime=="2015-05-01" | datetime=="2015-06-01" 
-                      | datetime=="2015-07-01" | datetime=="2015-08-01" 
-                      | datetime=="2015-09-01" | datetime=="2015-10-01"
-                      | datetime=="2015-11-01" | datetime=="2015-12-01"
-                      | datetime=="2016-01-01" | datetime=="2016-02-01"
-                      | datetime=="2016-03-01" | datetime=="2016-04-01"
-                      | datetime=="2016-05-01",
-select=state:scale_num_below_fpl)
+final_lag <- final90
+
 ```
 
-```{r}
-# merge by row
-final_lag <- rbind(alabama_lag, arizona_lag, arkansas_lag, florida_lag, georgia_lag, kansas_lag, 
-                   michigan_lag, mississippi_lag, missouri_flag, nc_flag, oklahoma_flag,
-                   tennessee_flag, utah_flag, virginia_lag, wisconsin_flag)
-
-print(final_lag)
-```
 
 ```{r}
 #########
@@ -322,17 +243,17 @@ coeftest(basic,c * vcovHC(basic, type = "HC1", cluster = "group"))
 ##############
 
 # Preliminaries for table design
-robust.order <- c("drug_law", "scale_num_below_fpl", "unemp_rate", "^Constant$") 
+robust.order <- c("drug_law", "scale_num_below_fpl", "unemp_rate") 
 
 robust.label =  c( "Drug Law (1=yes/0=no)",
                    "Number Below Federal Poverty Level (per 100,000)",
-                   "Unemployment Rate (in %)", "Constant") 
+                   "Unemployment Rate (in %)") 
 
 setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifying DS/project/Policy-Stats-Team/30_results")
 
 # Set up table with all three basic analyses components
 stargazer(basic, basic_rob1, basic_rob2,
-          title="Table 1. Basic model plus two robustnesschecks", 
+          title="Table 1. Basic model plus two robustness checks", 
           type = 'html', 
           out = "table1.html",
           omit.stat=c("f", "ser"),
