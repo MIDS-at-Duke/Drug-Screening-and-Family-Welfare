@@ -508,8 +508,8 @@ stargazer(MichiganReg,
 
 ```{r, fig.height = 2.5, fig.width = 10, fig.align = 'center'}
 #Model diagnostics plots: 
-Fitted <- TNReg$fitted.values[,1]
-Res <- TNReg$residuals[,1]
+Fitted <- MichiganReg$fitted.values[,1]
+Res <- MichiganReg$residuals[,1]
 D <- data.frame(Fitted = Fitted, Residuals = Res)
 
 ThisPlot <- ggplot(data = D, mapping = aes(x = Fitted, y = Residuals)) + geom_point(color = '#364C54', alpha = 0.60) + geom_hline(yintercept = 0, color = 'darkred', linetype = 'dashed') + labs(x = 'Fitted', y = 'Residuals', title = 'Residuals vs. Fitted') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
@@ -543,7 +543,7 @@ grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
 ```
 
 ```{r}
-#Visualize TN and Controls geographically: 
+#Visualize Utah and Controls geographically: 
 Region1Overall <- c('Colorado', 'New Mexico', 'Nevada')
 
 InterList <- c()
