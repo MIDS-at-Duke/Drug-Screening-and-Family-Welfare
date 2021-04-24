@@ -140,7 +140,7 @@ M <- cor(Data3)
 Correlation <- corrplot(M, method="circle", type = 'upper', col=colorRampPalette(c('navy', "lightblue", '#D7E8C4'))(200), addCoef.col = "black", tl.cex = 0.8, tl.col = 'black')
 ```
 
-The correlation heatmap indicates that no issues of multicollinearity are present within the data: a general criterion for the presence of multicollinearity is an absolute correlation coefficient greater than 0.70 among two or more feature variables. A modest positive correlation of 0.25 is observed between the number of households on TANF per 100,000 state residents and the number of households below the federal poverty line per 100,000 state residents. The correlation between the number of households on TANF per 100,000 state residents and unemployment rate is -0.01, indicating that unemployment rate likely does not contribute significant information for the prediction of the number of households on TANF per 100,000 state residents. 
+The correlation heatmap indicates that no issues of multicollinearity are present within the data: a general criterion for the presence of multicollinearity is an absolute correlation coefficient greater than 0.70 among two or more feature variables. A modest positive correlation of 0.25 is observed between the number of households on TANF per 100,000 state residents and unemployment rate. The correlation between the number of households on TANF per 100,000 state residents and the number of households below the federal poverty line per 100,000 state residents is -0.01, indicating that this variable likely does not contribute significant information for the prediction of the number of households on TANF per 100,000 state residents. This is most likely the result of the constant trend of the number of households below the federal poverty line over the considered time range.  
 
 # Identification of Policy States. 
 
@@ -409,6 +409,15 @@ QQ2 <- ggplot(Res, aes(sample = Residual)) + stat_qq(color = '#364C54', alpha = 
 
 grid.arrange(ThisPlot, QQ2, ncol = 2, nrow = 1)
 ```
+
+(Left): To determine if the model exhibits constant variability of residuals, a residuals versus fitted plot is generated. In the plot, the fitted values of the model are plotted on the $x$ axis, and the residuals of the model are plotted on the $y$ axis. The fitted values generally form
+a horizontal band around the $residual = 0$ line, indicating overall constant variability of residuals. However, non-random trends are visible within the plot that indicate a linear model may not be fully appropriate for the data, and the residuals are large in absolute magnitude. (Right): To determine if the model has nearly normal residuals, a normal
+probability plot is generated. In the plot, the data are plotted by residuals generated from a theoretical normal
+distribution. The plot for the data follows a general linear trend, except in the tail areas of the
+distribution. The first points at the beginning of the range of the data fall below the line, while the
+last points at the end of the range of the data also fall below the line. This indicates that the data
+exhibits left skew. Further analysis may augment the data to explain more variability of the response variable.  
+
 
 ### Case: Michigan. 
 
