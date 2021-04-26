@@ -115,7 +115,7 @@ The distribution of the outcome variable of interest is presented above. The num
 Two control variables are included within the data: state unemployment rate and the number of households below the federal poverty line per 100,000 state residents. 
 
 ```{r, warning = F, message = F}
-TANFPlot <- ggplot(data = final, mapping = aes(x = Date, y = scale_tanf_fams, color = scale_tanf_fams)) + geom_line() + geom_smooth(method = 'lm', color = 'lightblue') + theme_classic() + theme(legend.position = "none") + labs(x = 'Date', y = 'TANF Families Per Capita Scaled to 100,000', title = 'TANF Families Per Capita Scaled to 100,000: \n 2001 - 2019') + theme(plot.title = element_text(hjust = 0.5)) 
+TANFPlot <- ggplot(data = final, mapping = aes(x = Date, y = scale_tanf_fams)) + stat_smooth(method = 'gam', color = '#364C54', fill = "#BCD2CB", level = 0.99) + theme_classic() + theme(legend.position = "none") + labs(x = 'Date', y = 'TANF Families Per Capita Scaled to 100,000', title = 'Generalized Additive Model Regression of TANF Families Per Capita Scaled to 100,000: \n 2001 - 2019') + theme(plot.title = element_text(hjust = 0.5)) + theme(plot.title = element_text(size=10)) 
 TANFPlot
 ```
 
@@ -214,6 +214,20 @@ PlotP <- ggplot() + geom_boxplot(data = TC, mapping = aes(y = scale_num_below_fp
 grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
 ```
 
+(Left): State unemployment rate levels and trends are comparable across Tennessee and control states of Kentucky and South Carolina. A naive Welch Two Sample t-Test has a test statistic of -1.5376 and an associated p-value of 0.1245, indicating that the there is not sufficient evidence at any standard significance level to conclude that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 5.0563 and an associated p-value of 0.007126, indicating that there is sufficient evidence at the $\alpha = 0.01$ level to conclude that the lagged unemployment rate within the control states provides information for the unemployment rate within Tennessee; that is, the time series are statistically comparable. (Right): The number of households below the federal poverty line per 100,000 state residents is consistently slightly higher within control states than within Tennessee. A naive Welch Two Sample t-Test has a test statistic of -3.3369 and an associated p-value of 0.00088, indicating that there is sufficient evidence at the $\alpha = 0.01$ level to conclude that that the means of the two samples are different. A Granger Causality Test has an F-test statistic 3.5399 and an associated p-value of 0.06121, indicating that there is evidence at the $\alpha = 0.10$ significance level to conclude that the lagged number of households below the federal poverty line within the control states provides information for the number of households below the federal poverty line within Tennessee. Although these results are not overly robust, the treatment and control parallels are considered sufficient for variable matching within the context of the study as the time trends and the overall counts are relatively comparable.
+
+```{r}
+grangertest(TCCon$unemp_rate, TCTemp$unemp_rate, order = 2)
+grangertest(TCCon$scale_num_below_fpl, TCTemp$scale_num_below_fpl, order = 1)
+```
+
+
+```{r}
+t.test(TCTemp$unemp_rate, TCCon$unemp_rate)
+t.test(TCTemp$scale_num_below_fpl, TCCon$scale_num_below_fpl)
+```
+
+
 ```{r}
 #Visualize TN and Controls geographically: 
 Region1Overall <- c('South Carolina', 'Kentucky')
@@ -272,6 +286,8 @@ RegInit <- ggplot() + stat_smooth(TNPre, mapping = aes(x = Date, y = scale_tanf_
 ```{r, fig.height = 3, fig.width = 12, warning = F, message = F}
 grid.arrange(pTN, RegInit, ncol = 2, nrow = 1)
 ```
+
+Tennessee and the selected control states maintain parallel trends pertaining to the number of families on TANF prior to the date of policy enactment in Tennessee. Subsequent to the date of policy enactment, the trend pertaining to families on TANF in Tennessee exhibits an increased negative slope while a stable trend is maintained within the selected control states. 
 
 ```{r}
 #Now, make a new dataframe with all relevant states: 
@@ -415,9 +431,7 @@ a horizontal band around the $residual = 0$ line, indicating overall constant va
 probability plot is generated. In the plot, the data are plotted by residuals generated from a theoretical normal
 distribution. The plot for the data follows a general linear trend, except in the tail areas of the
 distribution. The first points at the beginning of the range of the data fall below the line, while the
-last points at the end of the range of the data also fall below the line. This indicates that the data
-exhibits left skew. Further analysis may augment the data to explain more variability of the response variable.  
-
+last points at the end of the range of the data fall above the line. This indicates that the data exhibits thin tails. Further analysis may augment the data to explain more variability of the response variable.  
 
 ### Case: Michigan. 
 
@@ -438,6 +452,20 @@ PlotFam <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = scale_
 ```{r, warning = F, message = F, fig.height = 3, fig.width = 12}
 grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
 ```
+
+(Left): State unemployment rate levels and trends are relatively comparable across Michigan and control states of Indiana and Illinois, with deviation occurring within the years 2005 to 2010. A naive Welch Two Sample t-Test has a test statistic of 5.0126 and an associated p-value of $8.063^{-7}$, indicating that there is sufficient evidence at any standard significance level to conclude that the means of the two samples are different. A Granger Causality Test, however, has an F-test statistic of 13.615 and an associated p-value of $2.654^{-6}$, indicating that there is sufficient evidence at any standard significance level to conclude that the lagged unemployment rate within the control states provides information for the unemployment rate within Michigan. (Right): The number of households below the federal poverty line per 100,000 state residents is consistently slightly higher within Michigan than within control states. A naive Welch Two Sample t-Test has a test statistic of 11.64 and an associated p-value of $< 2.2^{-16}$, indicating that there is sufficient evidence at any standard level of significance to conclude that that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 3.0203 and an associated p-value of 0.0836, indicating that there is evidence at the $\alpha = 0.10$ significance level to conclude that the lagged number of households below the federal poverty line within the control states provides information for the number of households below the federal poverty line within Michigan. Although these results are not overly robust, the treatment and control parallels are considered sufficient for variable matching within the context of the study as the time trends and the overall counts are relatively comparable.
+
+```{r, comment = ''}
+grangertest(TCCon$unemp_rate, TCTemp$unemp_rate, order = 2)
+grangertest(TCCon$scale_num_below_fpl, TCTemp$scale_num_below_fpl, order = 1)
+```
+
+```{r, comment = ''}
+t.test(TCTemp$unemp_rate, TCCon$unemp_rate)
+t.test(TCTemp$scale_num_below_fpl, TCCon$scale_num_below_fpl)
+```
+
+
 
 ```{r}
 #Visualize Michigan and Controls geographically: 
@@ -498,6 +526,8 @@ RegInit <- ggplot() + stat_smooth(TNPre, mapping = aes(x = Date, y = scale_tanf_
 ```{r, fig.height = 3, fig.width = 12, warning = F, message = F}
 grid.arrange(pTN, RegInit, ncol = 2, nrow = 1)
 ```
+
+Michigan and the selected control states maintain parallel trends pertaining to the number of families on TANF prior to the date of policy enactment in Michigan. Subsequent to the date of policy enactment, the trend pertaining to families on TANF in Michigan exhibits a significant downwards shift with a similar slope. A relatively stable trend is maintained within the selected control states. 
 
 ```{r}
 #Now, make a new dataframe with all relevant states: 
@@ -634,15 +664,20 @@ QQ2 <- ggplot(Res, aes(sample = Residual)) + stat_qq(color = '#364C54', alpha = 
 grid.arrange(ThisPlot, QQ2, ncol = 2, nrow = 1)
 ```
 
+(Left): To determine if the model exhibits constant variability of residuals, a residuals versus fitted plot is generated. In the plot, the fitted values of the model are plotted on the $x$ axis, and the residuals of the model are plotted on the $y$ axis. The fitted values generally form
+a horizontal band around the $residual = 0$ line in the second half of the range of fitted values, but fail to do so in the first half of the range of fitted values. Furthermore, a non-random oscillating trend is visible within the plot that indicates a linear model may not be fully appropriate for the data, and the residuals are large in absolute magnitude. (Right): To determine if the model has nearly normal residuals, a normal
+probability plot is generated. In the plot, the data are plotted by residuals generated from a theoretical normal
+distribution. The plot for the data fails to follow a linear trend in the tail areas of the distribution, significantly deviating from the theoretical line. The first points at the beginning of the range of the data fall above the line, while the last points at the end of the range of the data fall below the line. This indicates that the data exhibits thin tails. Further analysis may augment the data to explain more variability of the response variable.
+
 ### Case: Utah. 
 
 Policy Date: 03/2012. 
 
-Control Region: Colorado, New Mexico, Nevada. 
+Control Region: New Mexico, Montana. 
 
 ```{r}
 TCTemp <- final %>% filter(state == 'Utah')
-CList <- c('Colorado', 'New Mexico', 'Nevada')
+CList <- c('New Mexico', 'Montana')
 cols <- c("Utah" = '#364C54', "Control Region" = "darkgray")
 TCCon <- final %>% filter(state %in% CList)
 PlotEmp <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = unemp_rate, color = 'Control Region')) + geom_line(data = TCTemp, mapping = aes(x = Date, y = unemp_rate, color = 'Utah'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'State Unemployment Rate', title = 'State Unemployment Rate Trend \n Utah and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)  
@@ -654,9 +689,21 @@ PlotFam <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = scale_
 grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
 ```
 
+(Left): State unemployment rate levels and trends are relatively comparable across Utah and control states of New Mexico and Montana, with increased variability occurring after the year 2010. A naive Welch Two Sample t-Test has a test statistic of -7.1137 and an associated p-value of $5.454^{-12}$, indicating that the there is sufficient evidence any any standard level of significance to conclude that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 2.9399 and an associated p-value of 0.08812, indicating that there is sufficient evidence at the $\alpha = 0.10$ significance level to conclude that the lagged unemployment rate within the control states provides information for the unemployment rate within Utah. (Right): The number of households below the federal poverty line per 100,000 state residents is consistently higher within the control states than within Utah. A naive Welch Two Sample t-Test has a test statistic of -69.819 and an associated p-value of $< 2.2^{-16}$, indicating that there is sufficient evidence to conclude any standard significance level that that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 0.8603 and an associated p-value of 0.3547, indicating that there is not sufficient evidence at any standard significance level to conclude that the lagged number of households below the federal poverty line within the control states provides information for the number of households below the federal poverty line within Utah. While the general treatment and control parallels are again considered sufficient for variable matching within the context of the study, more advanced matching methods may certainly be explored in further analysis.  
+
+```{r, comment = ''}
+grangertest(TCCon$unemp_rate, TCTemp$unemp_rate, order = 1)
+grangertest(TCCon$scale_num_below_fpl, TCTemp$scale_num_below_fpl, order = 1)
+```
+
+```{r, comment = ''}
+t.test(TCTemp$unemp_rate, TCCon$unemp_rate)
+t.test(TCTemp$scale_num_below_fpl, TCCon$scale_num_below_fpl)
+```
+
 ```{r}
 #Visualize Utah and Controls geographically: 
-Region1Overall <- c('Colorado', 'New Mexico', 'Nevada')
+Region1Overall <- c('New Mexico', 'Montana')
 
 InterList <- c()
 for (i in us_states$region) {
@@ -679,7 +726,7 @@ pUtah <- ggplot(data = us_states,
 ```
 
 ```{r}
-Region1 <- c('Colorado', 'New Mexico', 'Nevada')
+Region1 <- c('New Mexico', 'Montana')
 
 R1 <- final %>% filter(state %in% Region1) 
 
@@ -717,9 +764,11 @@ RegInit <- ggplot() + stat_smooth(WVPre, mapping = aes(x = Date, y = scale_tanf_
 grid.arrange(pUtah, RegInit, ncol = 2, nrow = 1)
 ```
 
+Utah and the selected control states maintain parallel trends pertaining to the number of families on TANF prior to the date of policy enactment in Utah. Subsequent to the date of policy enactment, the respective trends pertaining to families on TANF in Utah and the control states remain fairly consistent; the absolute magnitude of the regression slope pertaining to Utah appears to decrease slightly.  
+
 ```{r}
 #Now, make a new dataframe with all relevant states: 
-StatesListUtah <- c('Utah', 'New Mexico', 'Colorado', 'Nevada')
+StatesListUtah <- c('Utah', 'New Mexico', 'Montana')
 UtahData <- final %>% filter(state %in% StatesListUtah)
 
 #Treatment/Control state indicator: 
@@ -850,6 +899,10 @@ QQ2 <- ggplot(Res, aes(sample = Residual)) + stat_qq(color = '#364C54', alpha = 
 
 grid.arrange(ThisPlot, QQ2, ncol = 2, nrow = 1)
 ```
+
+(Left): To determine if the model exhibits constant variability of residuals, a residuals versus fitted plot is generated. In the plot, the fitted values of the model are plotted on the $x$ axis, and the residuals of the model are plotted on the $y$ axis. The fitted values generally form
+a horizontal band around the $residual = 0$ line, indicating overall constant variability of residuals. Many residuals are large in absolute magnitude. (Right): To determine if the model has nearly normal residuals, a normal probability plot is generated. In the plot, the data are plotted by residuals generated from a theoretical normal
+distribution. The plot for the data follows a general linear trend, with deviation occurring at the end of the range of the data as the points curve upwards. This may indicate right skew within the data. Further analysis may augment the data to explain more variability of the response variable.
 
 # Save
 
