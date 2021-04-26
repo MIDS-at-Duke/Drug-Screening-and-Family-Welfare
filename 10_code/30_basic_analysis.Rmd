@@ -64,6 +64,9 @@ head(final)
 final$year_cat <- as.factor(final$year) # Duplicate the year variable as a factor for the FEs
 final$scale_tanf_fams <- final$percap_tanf_fams * 100000 # Scale the per capita tanf rate to 100,000 inhabitants
 final$scale_num_below_fpl <- final$percap_num_below_fpl * 100000 # Scale the per capita number below the federal poverty to 100,000 inhabitants
+
+final$all_tanf <- final$percap_tanf_fams * final$population # absolute numbers of tanf 
+final$all_belowfpl <- final$percap_num_below_fpl  * final$population #absolute number of those below fpl 
 ```
 
 ```{r}
@@ -79,21 +82,24 @@ G <- length(unique(final$state))
 c <- G/(G - 1)
 coeftest(basic,c * vcovHC(basic, type = "HC1", cluster = "group"))
 
+
+##############
+# Basic analysis with absolute numbers
+##############
+
+summary(basic2<-lm(all_tanf ~ drug_law + all_belowfpl + unemp_rate + (state) + (year_cat),data=final))
+
+# Cluster standard errors
+
+G <- length(unique(final$state))
+c <- G/(G - 1)
+coeftest(basic,c * vcovHC(basic, type = "HC1", cluster = "group"))
 ```
+
 
 ```{r}
 ##############
-# Basic analysis - robustness check 1: drop FEs
-##############
-
-summary(basic_rob1<-lm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate,
-                         data=final)) # We exclude a "post" indicator variable to reflect the period after the policy implementation for the aggregate analysis as the policy was implemented at different points in times for the different states, only include year for the time FE
-
-```
-
-```{r}
-##############
-# Prep robustness check 2: Lag time of 6 months on either end - subset states with lag
+# Prep robustness check: Lag time of 6 months on either end - subset states with lag
 ##############
 
 # Subset Alabama
@@ -226,7 +232,7 @@ final_lag <- final90
 
 ```{r}
 #########
-# Robustness check regression part 2
+# Robustness check regression
 ########
 summary(basic_rob2<-lm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate + (state) + (year_cat),
                          data=final_lag)) 
@@ -242,18 +248,18 @@ coeftest(basic,c * vcovHC(basic, type = "HC1", cluster = "group"))
 # Create tables 
 ##############
 
-# Preliminaries for table design
+# Preliminaries for first table design
 robust.order <- c("drug_law", "scale_num_below_fpl", "unemp_rate") 
 
-robust.label =  c( "Drug Law (1=yes/0=no)",
+robust.label =  c( "Drug Law (1=Yes/0=No)",
                    "Number Below Federal Poverty Level (per 100,000)",
                    "Unemployment Rate (in %)") 
 
 setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifying DS/project/Policy-Stats-Team/30_results")
 
-# Set up table with all three basic analyses components
-stargazer(basic, basic_rob1, basic_rob2,
-          title="Table 1. Basic model plus two robustness checks", 
+# Set up table with the two basic analyses components
+stargazer(basic, basic_rob2,
+          title="Table 1. Complete models", 
           type = 'html', 
           out = "table1.html",
           omit.stat=c("f", "ser"),
@@ -262,12 +268,39 @@ stargazer(basic, basic_rob1, basic_rob2,
           notes.append=FALSE,
           dep.var.labels ="",
           notes.label="",  
-          column.labels = c("Basic", "Without FEs", "With Lag"),
+          column.labels = c("Complete", "With Lag"),
           model.numbers=FALSE, 
           covariate.labels =robust.label, 
           notes=c("Standard errors given in parentheses.",
           "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
           "TANF rate scaled to 100,000 inhabitants."),
+          summary.stat=("n"))
+
+
+# Preliminaries for second table design
+robust.order <- c("drug_law", "all_belowfpl", "unemp_rate") 
+
+robust.label =  c( "Drug Law (1=Yes/0=No)",
+                   "Number Below Federal Poverty Level (absolute)",
+                   "Unemployment Rate (in %)") 
+
+setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifying DS/project/Policy-Stats-Team/30_results")
+
+# Set up table with absolute numbers model
+stargazer(basic2,
+          title="Table 1 (A). Complete model with absolute numbers", 
+          type = 'html', 
+          out = "table1a.html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="", 
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1."),
           summary.stat=("n"))
 
 ##############
