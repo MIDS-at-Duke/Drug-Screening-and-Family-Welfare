@@ -214,7 +214,7 @@ PlotP <- ggplot() + geom_boxplot(data = TC, mapping = aes(y = scale_num_below_fp
 grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
 ```
 
-(Left): State unemployment rate levels and trends are comparable across Tennessee and control states of Kentucky and South Carolina. A naive Welch Two Sample t-Test has a test statistic of -1.5376 and an associated p-value of 0.1245, indicating that the there is not sufficient evidence at any standard significance level to conclude that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 5.0563 and an associated p-value of 0.007126, indicating that there is sufficient evidence at the $\alpha = 0.01$ level to conclude that the lagged unemployment rate within the control states provides information for the unemployment rate within Tennessee; that is, the time series are statistically comparable. (Right): The number of households below the federal poverty line per 100,000 state residents is consistently slightly higher within control states than within Tennessee. A naive Welch Two Sample t-Test has a test statistic of -3.3369 and an associated p-value of 0.00088, indicating that there is sufficient evidence at the $\alpha = 0.01$ level to conclude that that the means of the two samples are different. A Granger Causality Test has an F-test statistic 3.5399 and an associated p-value of 0.06121, indicating that there is evidence at the $\alpha = 0.10$ significance level to conclude that the lagged number of households below the federal poverty line within the control states provides information for the number of households below the federal poverty line within Tennessee. Although these results are not overly robust, the treatment and control parallels are considered sufficient for variable matching within the context of the study as the time trends and the overall counts are relatively comparable.
+(Left): State unemployment rate levels and trends are comparable across Tennessee and control states of Kentucky and South Carolina. A naive Welch Two Sample t-Test has a test statistic of -3.5411 and an associated p-value of 0.0004378, indicating that the there is sufficient evidence at any standard significance level to conclude that the means of the two samples are different. However, a Granger Causality Test has an F-test statistic of 5.0563 and an associated p-value of 0.007126, indicating that there is sufficient evidence at the $\alpha = 0.01$ level to conclude that the lagged unemployment rate within the control states provides information for the unemployment rate within Tennessee; that is, the time series are statistically comparable. (Right): The number of households below the federal poverty line per 100,000 state residents is consistently slightly higher within control states than within Tennessee. A naive Welch Two Sample t-Test has a test statistic of -9.3551 and an associated p-value of $< 2.2^{-16}$, indicating that there is sufficient evidence at any standard significance level to conclude that that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 3.5399 and an associated p-value of 0.06121, indicating that there is evidence at the $\alpha = 0.10$ significance level to conclude that the lagged number of households below the federal poverty line within the control states provides information for the number of households below the federal poverty line within Tennessee. Although these results are not overly robust, the treatment and control parallels are considered sufficient for variable matching within the context of the study as the time trends and the overall counts are relatively comparable.
 
 ```{r}
 grangertest(TCCon$unemp_rate, TCTemp$unemp_rate, order = 2)
@@ -328,14 +328,6 @@ TNData$state <- as.factor(TNData$state)
 TNReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = TNData)
 ```
 
-## With no fixed effects.
-
-```{r}
-TNNoFE <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate, data = TNData)
-summary(TNNoFE)
-```
-
-
 ## With lag.
 
 ```{r}
@@ -371,7 +363,7 @@ stargazer(TNReg,
           notes.append=FALSE,
           dep.var.labels ="",
           notes.label="",  
-          column.labels = c("Basic"),
+          column.labels = c("Complete"),
           model.numbers=FALSE, 
           covariate.labels =robust.label, 
           notes=c("Standard errors given in parentheses.",
@@ -388,7 +380,7 @@ robust.label =  c( "Drug Law (1 = Yes/0 = No)",
 setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
 
 # Set up table with all three basic analyses components
-stargazer(TNReg, TNNoFE, TNRegLAG, 
+stargazer(TNReg, TNRegLAG, 
           title="Table 4 (A). Tennessee Model Regression with Robustness Checks.", 
           type = 'html', 
           out = "table4(A).html",
@@ -399,7 +391,7 @@ stargazer(TNReg, TNNoFE, TNRegLAG,
           notes.append=FALSE,
           dep.var.labels ="",
           notes.label="",  
-          column.labels = c("Complete", "Without FEs", "With Lag"),
+          column.labels = c("Complete", "With Lag"),
           model.numbers=FALSE, 
           covariate.labels =robust.label, 
           notes=c("Standard errors given in parentheses.",
@@ -453,7 +445,7 @@ PlotFam <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = scale_
 grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
 ```
 
-(Left): State unemployment rate levels and trends are relatively comparable across Michigan and control states of Indiana and Illinois, with deviation occurring within the years 2005 to 2010. A naive Welch Two Sample t-Test has a test statistic of 5.0126 and an associated p-value of $8.063^{-7}$, indicating that there is sufficient evidence at any standard significance level to conclude that the means of the two samples are different. A Granger Causality Test, however, has an F-test statistic of 13.615 and an associated p-value of $2.654^{-6}$, indicating that there is sufficient evidence at any standard significance level to conclude that the lagged unemployment rate within the control states provides information for the unemployment rate within Michigan. (Right): The number of households below the federal poverty line per 100,000 state residents is consistently slightly higher within Michigan than within control states. A naive Welch Two Sample t-Test has a test statistic of 11.64 and an associated p-value of $< 2.2^{-16}$, indicating that there is sufficient evidence at any standard level of significance to conclude that that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 3.0203 and an associated p-value of 0.0836, indicating that there is evidence at the $\alpha = 0.10$ significance level to conclude that the lagged number of households below the federal poverty line within the control states provides information for the number of households below the federal poverty line within Michigan. Although these results are not overly robust, the treatment and control parallels are considered sufficient for variable matching within the context of the study as the time trends and the overall counts are relatively comparable.
+(Left): State unemployment rate levels and trends are relatively comparable across Michigan and control states of Indiana and Illinois, with deviation occurring within the years 2005 to 2010. A naive Welch Two Sample t-Test has a test statistic of 5.0126 and an associated p-value of $8.063^{-7}$, indicating that there is sufficient evidence at any standard significance level to conclude that the means of the two samples are different. A Granger Causality Test, however, has an F-test statistic of 13.615 and an associated p-value of $2.654^{-6}$, indicating that there is sufficient evidence at any standard significance level to conclude that the lagged unemployment rate within the control states provides information for the unemployment rate within Michigan. (Right): The number of households below the federal poverty line per 100,000 state residents is consistently slightly higher within Michigan than within control states. A naive Welch Two Sample t-Test has a test statistic of 11.64 and an associated p-value of $< 2.2^{-16}$, indicating that there is sufficient evidence at any standard level of significance to conclude that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 3.0203 and an associated p-value of 0.0836, indicating that there is evidence at the $\alpha = 0.10$ significance level to conclude that the lagged number of households below the federal poverty line within the control states provides information for the number of households below the federal poverty line within Michigan. Although these results are not overly robust, the treatment and control parallels are considered sufficient for variable matching within the context of the study as the time trends and the overall counts are relatively comparable.
 
 ```{r, comment = ''}
 grangertest(TCCon$unemp_rate, TCTemp$unemp_rate, order = 2)
@@ -568,13 +560,6 @@ TNData$state <- as.factor(TNData$state)
 MichiganReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = TNData)
 ```
 
-## With no fixed effects.
-
-```{r}
-MichiganNoFE <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate, data = TNData)
-summary(MichiganNoFE)
-```
-
 ## With lag.
 
 ```{r}
@@ -593,7 +578,7 @@ summary(MichiganRegLAG)
 ```{r, warning = F, message = F}
 # Preliminaries for table design. 
 robust.order <- c("drug_law1", "scale_num_below_fpl", "unemp_rate") 
-robust.label =  c( "Drug Law (1=yes/0=no)",
+robust.label =  c( "Drug Law (1 = Yes/0 = No)",
                    "Number Below Federal Poverty Level (per 100,000)",
                    "Unemployment Rate (in %)")
 setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
@@ -610,7 +595,7 @@ stargazer(MichiganReg,
           notes.append=FALSE,
           dep.var.labels ="",
           notes.label="",  
-          column.labels = c("Basic"),
+          column.labels = c("Complete"),
           model.numbers=FALSE, 
           covariate.labels =robust.label, 
           notes=c("Standard errors given in parentheses.",
@@ -627,7 +612,7 @@ robust.label =  c( "Drug Law (1 = Yes/0 = No)",
 setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
 
 # Set up table with all three basic analyses components
-stargazer(MichiganReg, MichiganNoFE, MichiganRegLAG, 
+stargazer(MichiganReg, MichiganRegLAG, 
           title="Table 4 (B). Michigan Model Regression with Robustness Checks.", 
           type = 'html', 
           out = "table4(B).html",
@@ -638,7 +623,7 @@ stargazer(MichiganReg, MichiganNoFE, MichiganRegLAG,
           notes.append=FALSE,
           dep.var.labels ="",
           notes.label="",  
-          column.labels = c("Complete", "Without FEs", "With Lag"),
+          column.labels = c("Complete", "With Lag"),
           model.numbers=FALSE, 
           covariate.labels =robust.label, 
           notes=c("Standard errors given in parentheses.",
@@ -689,7 +674,7 @@ PlotFam <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = scale_
 grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
 ```
 
-(Left): State unemployment rate levels and trends are relatively comparable across Utah and control states of New Mexico and Montana, with increased variability occurring after the year 2010. A naive Welch Two Sample t-Test has a test statistic of -7.1137 and an associated p-value of $5.454^{-12}$, indicating that the there is sufficient evidence any any standard level of significance to conclude that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 2.9399 and an associated p-value of 0.08812, indicating that there is sufficient evidence at the $\alpha = 0.10$ significance level to conclude that the lagged unemployment rate within the control states provides information for the unemployment rate within Utah. (Right): The number of households below the federal poverty line per 100,000 state residents is consistently higher within the control states than within Utah. A naive Welch Two Sample t-Test has a test statistic of -69.819 and an associated p-value of $< 2.2^{-16}$, indicating that there is sufficient evidence to conclude any standard significance level that that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 0.8603 and an associated p-value of 0.3547, indicating that there is not sufficient evidence at any standard significance level to conclude that the lagged number of households below the federal poverty line within the control states provides information for the number of households below the federal poverty line within Utah. While the general treatment and control parallels are again considered sufficient for variable matching within the context of the study, more advanced matching methods may certainly be explored in further analysis.  
+(Left): State unemployment rate levels and trends are relatively comparable across Utah and control states of New Mexico and Montana, with increased variability occurring after the year 2010. A naive Welch Two Sample t-Test has a test statistic of -7.1137 and an associated p-value of $5.454^{-12}$, indicating that there is sufficient evidence at any standard level of significance to conclude that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 2.9399 and an associated p-value of 0.08812, indicating that there is sufficient evidence at the $\alpha = 0.10$ significance level to conclude that the lagged unemployment rate within the control states provides information for the unemployment rate within Utah. (Right): The number of households below the federal poverty line per 100,000 state residents is consistently higher within the control states than within Utah. A naive Welch Two Sample t-Test has a test statistic of -69.819 and an associated p-value of $< 2.2^{-16}$, indicating that there is sufficient evidence to conclude at any standard significance level that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 0.8603 and an associated p-value of 0.3547, indicating that there is not sufficient evidence at any standard significance level to conclude that the lagged number of households below the federal poverty line within the control states provides information for the number of households below the federal poverty line within Utah. While the general treatment and control parallels are again considered sufficient for variable matching within the context of the study, more advanced matching methods may certainly be explored in further analysis.  
 
 ```{r, comment = ''}
 grangertest(TCCon$unemp_rate, TCTemp$unemp_rate, order = 1)
@@ -806,12 +791,6 @@ UtahReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | 
 
 summary(UtahReg)
 ```
-## With no fixed effects.
-
-```{r}
-UtahNoFE <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate, data = UtahData)
-summary(UtahNoFE)
-```
 
 ## With lag.
 
@@ -830,7 +809,7 @@ summary(UtahRegLAG)
 ```{r, warning = F, message = F}
 # Preliminaries for table design. 
 robust.order <- c("drug_law1", "scale_num_below_fpl", "unemp_rate") 
-robust.label =  c( "Drug Law (1=yes/0=no)",
+robust.label =  c( "Drug Law (1 = Yes/0 = No)",
                    "Number Below Federal Poverty Level (per 100,000)",
                    "Unemployment Rate (in %)")
 setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
@@ -847,7 +826,7 @@ stargazer(UtahReg,
           notes.append=FALSE,
           dep.var.labels ="",
           notes.label="",  
-          column.labels = c("Basic"),
+          column.labels = c("Complete"),
           model.numbers=FALSE, 
           covariate.labels =robust.label, 
           notes=c("Standard errors given in parentheses.",
@@ -864,7 +843,7 @@ robust.label =  c( "Drug Law (1 = Yes/0 = No)",
 setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
 
 # Set up table with all three basic analyses components
-stargazer(UtahReg, UtahNoFE, UtahRegLAG, 
+stargazer(UtahReg, UtahRegLAG, 
           title="Table 4 (C). Utah Model Regression with Robustness Checks.", 
           type = 'html', 
           out = "table4(C).html",
@@ -875,7 +854,7 @@ stargazer(UtahReg, UtahNoFE, UtahRegLAG,
           notes.append=FALSE,
           dep.var.labels ="",
           notes.label="",  
-          column.labels = c("Complete", "Without FEs", "With Lag"),
+          column.labels = c("Complete", "With Lag"),
           model.numbers=FALSE, 
           covariate.labels =robust.label, 
           notes=c("Standard errors given in parentheses.",
