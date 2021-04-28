@@ -1,0 +1,313 @@
+```{r}
+##############
+# Load R libraries
+##############
+knitr::opts_chunk$set(echo = FALSE)
+ library(dplyr)
+ library(kableExtra)
+ library(zoo)
+ library(stargazer)
+ library(sandwich)
+ library(lmtest)
+ library(plm)
+ library(tidyverse)
+ library(ggplot2)
+ library(gridExtra)
+ library(maps)
+ library(mapproj)
+ library(lfe)
+library (zoo)
+library (stargazer)
+library(sandwich)
+library("lmtest")
+library(plm)
+
+```
+
+```{r}
+##############
+# Read in data 
+##############
+
+setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifying DS/project/Policy-Stats-Team/20_intermediate_data")
+final<-read.csv("final_dataset_clean.csv")
+head(final)
+
+
+##############
+# Do some cleaning
+##############
+
+#Restrict Year range: 
+ Rang1 <- seq(2001, 2019, 1)
+ final <- final %>% filter(year %in% Rang1)
+
+ #Generate a new DateTime variable: 
+ final$Date <- as.Date(final$datetime, "%Y-%m-%d")
+
+ #Year to Factor: 
+ final$year_cat <- as.factor(final$year)
+
+ #Convert drug_law to binary factor variable. 
+ final$drug_law <- as.factor(final$drug_law)
+
+#Drop NA values: 
+ final <- final %>% drop_na()
+
+ #Identify DC as an outlier; drop: 
+ final <- final %>% filter(state != 'District of Columbia')
+
+ #There are some values that are equal to 0; check that these are missing 
+ #within the raw data and omit (major outliers). 
+ final <- final %>% filter(tanf_fams != 0)
+
+final$year_cat <- as.factor(final$year) # Duplicate the year variable as a factor for the FEs
+final$scale_tanf_fams <- final$percap_tanf_fams * 100000 # Scale the per capita tanf rate to 100,000 inhabitants
+final$scale_num_below_fpl <- final$percap_num_below_fpl * 100000 # Scale the per capita number below the federal poverty to 100,000 inhabitants
+
+final$all_tanf <- final$percap_tanf_fams * final$population # absolute numbers of tanf 
+final$all_belowfpl <- final$percap_num_below_fpl  * final$population #absolute number of those below fpl 
+```
+
+```{r}
+##############
+# Basic analysis
+##############
+
+summary(basic<-lm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate + (state) + (year_cat),data=final)) # We exclude a "post" indicator variable to reflect the period after the policy implementation for the aggregate analysis as the policy was implemented at different points in times for the different states, only include year for the time FE
+
+# Cluster standard errors
+
+G <- length(unique(final$state))
+c <- G/(G - 1)
+coeftest(basic,c * vcovHC(basic, type = "HC1", cluster = "group"))
+
+
+##############
+# Basic analysis with absolute numbers
+##############
+
+summary(basic2<-lm(all_tanf ~ drug_law + all_belowfpl + unemp_rate + (state) + (year_cat),data=final))
+
+# Cluster standard errors
+
+G <- length(unique(final$state))
+c <- G/(G - 1)
+coeftest(basic,c * vcovHC(basic, type = "HC1", cluster = "group"))
+```
+
+
+```{r}
+##############
+# Prep robustness check: Lag time of 6 months on either end - subset states with lag
+##############
+
+# Subset Alabama
+final1<-final[!(final$state=="Alabama" & final$datetime=="2014-04-01"),]
+final2<-final1[!(final1$state=="Alabama" & final1$datetime=="2014-05-01"),]
+final3<-final2[!(final2$state=="Alabama" & final2$datetime=="2014-06-01"),]
+final4<-final3[!(final3$state=="Alabama" & final3$datetime=="2014-07-01"),]
+final5<-final4[!(final4$state=="Alabama" & final4$datetime=="2014-08-01"),]
+final6<-final5[!(final5$state=="Alabama" & final5$datetime=="2014-09-01"),]
+
+
+# Subset Arizona
+final7<-final6[!(final6$state=="Arizona" & final6$datetime=="2011-04-01"),]
+final8<-final7[!(final7$state=="Arizona" & final7$datetime=="2011-05-01"),]
+final9<-final8[!(final8$state=="Arizona" & final8$datetime=="2011-06-01"),]
+final10<-final9[!(final9$state=="Arizona" & final9$datetime=="2011-07-01"),]
+final11<-final10[!(final10$state=="Arizona" & final10$datetime=="2011-08-01"),]
+final12<-final11[!(final11$state=="Arizona" & final11$datetime=="2011-09-01"),]
+
+
+# Subset Arkansas
+final13<-final12[!(final12$state=="Arkansas" & final12$datetime=="2015-04-01"),]
+final14<-final13[!(final13$state=="Arkansas" & final13$datetime=="2015-05-01"),]
+final15<-final14[!(final14$state=="Arkansas" & final14$datetime=="2015-06-01"),]
+final16<-final15[!(final15$state=="Arkansas" & final15$datetime=="2015-07-01"),]
+final17<-final16[!(final16$state=="Arkansas" & final16$datetime=="2015-08-01"),]
+final18<-final17[!(final17$state=="Arkansas" & final17$datetime=="2015-09-01"),]
+
+# Subset Florida
+final19<-final18[!(final18$state=="Florida" & final18$datetime=="2011-07-01"),]
+final20<-final19[!(final19$state=="Florida" & final19$datetime=="2011-08-01"),]
+final21<-final20[!(final20$state=="Florida" & final20$datetime=="2011-09-01"),]
+final22<-final21[!(final21$state=="Florida" & final21$datetime=="2011-10-01"),]
+final23<-final22[!(final22$state=="Florida" & final22$datetime=="2011-11-01"),]
+final24<-final23[!(final23$state=="Florida" & final23$datetime=="2011-12-01"),]
+
+# Subset Georgia
+final25<-final24[!(final24$state=="Georgia" & final24$datetime=="2012-07-01"),]
+final26<-final25[!(final25$state=="Georgia" & final25$datetime=="2012-08-01"),]
+final27<-final26[!(final26$state=="Georgia" & final26$datetime=="2012-09-01"),]
+final28<-final27[!(final27$state=="Georgia" & final27$datetime=="2012-10-01"),]
+final29<-final28[!(final28$state=="Georgia" & final28$datetime=="2012-11-01"),]
+final30<-final29[!(final29$state=="Georgia" & final29$datetime=="2012-12-01"),]
+
+# Subset Kansas
+final31<-final30[!(final30$state=="Kansas" & final30$datetime=="2014-01-01"),]
+final32<-final31[!(final31$state=="Kansas" & final31$datetime=="2014-02-01"),]
+final33<-final32[!(final32$state=="Kansas" & final32$datetime=="2014-03-01"),]
+final34<-final33[!(final33$state=="Kansas" & final33$datetime=="2014-04-01"),]
+final35<-final34[!(final34$state=="Kansas" & final34$datetime=="2014-05-01"),]
+final36<-final35[!(final35$state=="Kansas" & final35$datetime=="2014-06-01"),]
+
+# Subset Michigan
+final37<-final36[!(final36$state=="Michigan" & final36$datetime=="2014-12-01"),]
+final38<-final37[!(final37$state=="Michigan" & final37$datetime=="2015-01-01"),]
+final39<-final38[!(final38$state=="Michigan" & final38$datetime=="2015-02-01"),]
+final40<-final39[!(final39$state=="Michigan" & final39$datetime=="2015-03-01"),]
+final41<-final40[!(final40$state=="Michigan" & final40$datetime=="2015-04-01"),]
+final42<-final41[!(final41$state=="Michigan" & final41$datetime=="2015-05-01"),]
+
+# Subset Mississippi
+final43<-final42[!(final42$state=="Mississippi" & final42$datetime=="2014-07-01"),]
+final44<-final43[!(final43$state=="Mississippi" & final43$datetime=="2014-08-01"),]
+final45<-final44[!(final44$state=="Mississippi" & final44$datetime=="2014-09-01"),]
+final46<-final45[!(final45$state=="Mississippi" & final45$datetime=="2014-10-01"),]
+final47<-final46[!(final46$state=="Mississippi" & final46$datetime=="2014-11-01"),]
+final48<-final47[!(final47$state=="Mississippi" & final47$datetime=="2014-12-01"),]
+
+# Subset Missouri
+final49<-final48[!(final48$state=="Missouri" & final48$datetime=="2011-08-01"),]
+final50<-final49[!(final49$state=="Missouri" & final49$datetime=="2011-09-01"),]
+final51<-final50[!(final50$state=="Missouri" & final50$datetime=="2011-10-01"),]
+final52<-final51[!(final51$state=="Missouri" & final51$datetime=="2011-11-01"),]
+final53<-final52[!(final52$state=="Missouri" & final52$datetime=="2011-12-01"),]
+final54<-final53[!(final53$state=="Missouri" & final53$datetime=="2012-01-01"),]
+
+
+# Subset North Carolina
+final55<-final54[!(final54$state=="North Carolina" & final54$datetime=="2013-07-01"),]
+final56<-final55[!(final55$state=="North Carolina" & final55$datetime=="2013-08-01"),]
+final57<-final56[!(final56$state=="North Carolina" & final56$datetime=="2013-09-01"),]
+final58<-final57[!(final57$state=="North Carolina" & final57$datetime=="2013-10-01"),]
+final59<-final58[!(final58$state=="North Carolina" & final58$datetime=="2013-11-01"),]
+final60<-final59[!(final59$state=="North Carolina" & final59$datetime=="2013-12-01"),]
+
+# Subset Oklahoma
+final61<-final60[!(final60$state=="Oklahoma" & final60$datetime=="2012-11-01"),]
+final62<-final61[!(final61$state=="Oklahoma" & final61$datetime=="2012-12-01"),]
+final63<-final62[!(final62$state=="Oklahoma" & final62$datetime=="2013-01-01"),]
+final64<-final63[!(final63$state=="Oklahoma" & final63$datetime=="2013-02-01"),]
+final65<-final64[!(final64$state=="Oklahoma" & final64$datetime=="2013-03-01"),]
+final66<-final65[!(final65$state=="Oklahoma" & final65$datetime=="2013-04-01"),]
+
+# Subset Tennessee
+final67<-final66[!(final66$state=="Tennessee" & final66$datetime=="2014-07-01"),]
+final68<-final67[!(final67$state=="Tennessee" & final67$datetime=="2014-08-01"),]
+final69<-final68[!(final68$state=="Tennessee" & final68$datetime=="2014-09-01"),]
+final70<-final69[!(final69$state=="Tennessee" & final69$datetime=="2014-10-01"),]
+final71<-final70[!(final70$state=="Tennessee" & final70$datetime=="2014-11-01"),]
+final72<-final71[!(final71$state=="Tennessee" & final71$datetime=="2014-12-01"),]
+
+# Subset Utah
+final73<-final72[!(final72$state=="Utah" & final72$datetime=="2012-03-01"),]
+final74<-final73[!(final73$state=="Utah" & final73$datetime=="2012-04-01"),]
+final75<-final74[!(final74$state=="Utah" & final74$datetime=="2012-05-01"),]
+final76<-final75[!(final75$state=="Utah" & final75$datetime=="2012-06-01"),]
+final77<-final76[!(final76$state=="Utah" & final76$datetime=="2012-07-01"),]
+final78<-final77[!(final77$state=="Utah" & final77$datetime=="2012-08-01"),]
+
+# Subset West Virginia
+final79<-final78[!(final78$state=="West Virginia" & final78$datetime=="2016-12-01"),]
+final80<-final79[!(final79$state=="West Virginia" & final79$datetime=="2017-01-01"),]
+final81<-final80[!(final80$state=="West Virginia" & final80$datetime=="2017-02-01"),]
+final82<-final81[!(final81$state=="West Virginia" & final81$datetime=="2017-03-01"),]
+final83<-final82[!(final82$state=="West Virginia" & final82$datetime=="2017-04-01"),]
+final84<-final83[!(final83$state=="West Virginia" & final83$datetime=="2017-05-01"),]
+
+# Subset Wisconsin
+final85<-final84[!(final84$state=="Wisconsin" & final84$datetime=="2015-11-01"),]
+final86<-final85[!(final85$state=="Wisconsin" & final85$datetime=="2015-12-01"),]
+final87<-final86[!(final86$state=="Wisconsin" & final86$datetime=="2016-01-01"),]
+final88<-final87[!(final87$state=="Wisconsin" & final87$datetime=="2016-02-01"),]
+final89<-final88[!(final88$state=="Wisconsin" & final88$datetime=="2016-03-01"),]
+final90<-final89[!(final89$state=="Wisconsin" & final89$datetime=="2016-04-01"),]
+
+final_lag <- final90
+
+```
+
+
+```{r}
+#########
+# Robustness check regression
+########
+summary(basic_rob2<-lm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate + (state) + (year_cat),
+                         data=final_lag)) 
+
+G <- length(unique(final$state))
+c <- G/(G - 1)
+coeftest(basic,c * vcovHC(basic, type = "HC1", cluster = "group"))
+```
+
+```{r}
+
+##############
+# Create tables 
+##############
+
+# Preliminaries for first table design
+robust.order <- c("drug_law", "scale_num_below_fpl", "unemp_rate") 
+
+robust.label =  c( "Drug Law (1=Yes/0=No)",
+                   "Number Below Federal Poverty Level (per 100,000)",
+                   "Unemployment Rate (in %)") 
+
+setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifying DS/project/Policy-Stats-Team/30_results")
+
+# Set up table with the two basic analyses components
+stargazer(basic, basic_rob2,
+          title="Table 1. Complete model", 
+          type = 'html', 
+          out = "table1.html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="",  
+          column.labels = c("Complete", "With Lag"),
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
+          "TANF rate scaled to 100,000 inhabitants."),
+          summary.stat=("n"))
+
+
+# Preliminaries for second table design
+robust.order <- c("drug_law", "all_belowfpl", "unemp_rate") 
+
+robust.label =  c( "Drug Law (1=Yes/0=No)",
+                   "Number Below Federal Poverty Level (absolute)",
+                   "Unemployment Rate (in %)") 
+
+setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifying DS/project/Policy-Stats-Team/30_results")
+
+# Set up table with absolute numbers model
+stargazer(basic2,
+          title="Table 1 (A). Complete model with absolute numbers", 
+          type = 'html', 
+          out = "table1a.html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="", 
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1."),
+          summary.stat=("n"))
+
+##############
+# Save
+##############
+
+
+print("done")
+
+```
