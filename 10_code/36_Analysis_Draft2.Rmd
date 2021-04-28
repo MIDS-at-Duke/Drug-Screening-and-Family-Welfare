@@ -1,0 +1,890 @@
+---
+title: "State Level Analysis"
+date: "4/7/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(dplyr)
+library(kableExtra)
+library(zoo)
+library(stargazer)
+library(sandwich)
+library(lmtest)
+library(plm)
+library(raster)
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+library(maps)
+library(mapproj)
+library(lfe)
+library(corrplot)
+```
+
+
+```{r, results = F, message = F, warning = F}
+setwd('C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/20_intermediate_data')
+final<-read.csv("final_dataset_clean.csv")
+```
+
+# Initial Set-Up and (Some) EDA.
+
+The compiled data consists of 11,628 observations and 11 variables. Refer to Appendix I for definitions of all variables. The year range within the data is 2001 to 2019, inclusive. 
+
+The number of households on TANF is scaled by state population and multiplied by a constant of 100,000 to yield the number of households on TANF per 100,000 state residents. This is the outcome variable of interest for the study. 
+
+The number of families below the federal poverty line is similarly scaled by state population and multiplied by a constant of 100,000 to yield the number of households below the federal poverty line per 100,000 state residents.
+
+There are 3 missing "NA" observations within the data. These pertain to Delaware with dates of 10/2015, 11/2015, and 12/2015 and are omitted from the data set. There are 5 observations where households on TANF are reported as 0: Idaho with dates of 11/2009 and 12/2009, and Missouri with dates of 1/2006, 2/2006, and 3/2006. These are identified as missing values in the raw data, and are omitted from the data set. The observations pertaining to Washington, D.C. are identified as high-range outliers and are omitted. Subsequent to omissions, the data consists of 11,392 rows.   
+
+```{r, results = F}
+#Restrict Year range: 
+Rang1 <- seq(2001, 2019, 1)
+final <- final %>% filter(year %in% Rang1)
+
+#Generate a new DateTime variable: 
+final$Date <- as.Date(final$datetime, "%Y-%m-%d")
+
+#Year to Factor: 
+final$year_cat <- as.factor(final$year)
+
+#Convert drug_law to binary factor variable. 
+final$drug_law <- as.factor(final$drug_law)
+
+final$scale_tanf_fams <- final$percap_tanf_fams * 100000 # Scale the per capita tanf rate to 100,000 inhabitants
+
+final$scale_num_below_fpl <- final$percap_num_below_fpl * 100000 # Scale the per capita number below the federal poverty to 100,000 inhabitants
+
+#View data: 
+kable(head(final))
+```
+
+```{r, results = F}
+dim(final)
+```
+
+```{r, warning = F, message = F, comment = '', results = F}
+#Missing variables.
+#Code is taken from https://jenslaufer.com/data/analysis/visualize_missing_values_with_ggplot.html (for the subsequent three visualizations).  
+MISSINGVALS <- final %>%
+    gather(key = "key", value = "val") %>%
+    mutate(is.missing = is.na(val)) %>%
+    group_by(key, is.missing) %>%
+    summarise(num.missing = n()) %>%
+    filter(is.missing == T) %>%
+    dplyr::select(-is.missing) %>%
+    arrange(desc(num.missing))
+
+MISSINGVALS
+```
+
+```{r}
+#Drop NA values: 
+final <- final %>% drop_na()
+
+#Identify DC as an outlier; drop: 
+final <- final %>% filter(state != 'District of Columbia')
+
+#There are some values that are equal to 0; check that these are missing 
+#within the raw data and omit (major outliers). 
+final <- final %>% filter(tanf_fams != 0)
+```
+
+### Distribution of Outcome Variable of Interest: 
+
+```{r}
+xfit <- seq(0, max(final$scale_tanf_fams), length = 100) 
+yfit <- dnorm(xfit, mean = mean(final$scale_tanf_fams), sd = sd(final$scale_tanf_fams))
+
+MeanTANF <- mean(final$scale_tanf_fams)
+SdTANF <- sd(final$scale_tanf_fams)
+above <- MeanTANF + SdTANF
+below <- MeanTANF - SdTANF
+
+cols <- c("Dev" = "dodgerblue", "Mean" = "darkred", "Normal" = '#364C54')
+CountPlot <- ggplot() + geom_histogram(aes(x = final$scale_tanf_fams), fill = "#BCD2CB", binwidth = 20) + geom_line(aes(x = xfit, y = yfit*2000*150, color = 'Normal'), size = 1) + labs(x = 'TANF Familes Per Capita Scaled to 100,000', y = 'Frequency', title = 'Histogram of TANF Families Per Capita \n Scaled to 100,000') + geom_vline(aes(xintercept = MeanTANF, color = 'Mean'), linetype = 'dashed') + geom_vline(aes(xintercept = below, color = 'Dev'), linetype = 'dashed') + geom_vline(xintercept = above, color = 'dodgerblue', linetype = 'dashed') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_color_manual(name = "", labels = c('1 St. Deviation', 'Empirical Mean', 'Normal Distr.'), values = cols) + theme(legend.position="bottom")
+CountPlot
+```
+
+The distribution of the outcome variable of interest is presented above. The number of households on TANF by state is a discrete count variable, but approximate Normality is assumed under sufficient number of observations. The data is skewed right.
+
+Two control variables are included within the data: state unemployment rate and the number of households below the federal poverty line per 100,000 state residents. 
+
+```{r, warning = F, message = F}
+TANFPlot <- ggplot(data = final, mapping = aes(x = Date, y = scale_tanf_fams)) + stat_smooth(method = 'gam', color = '#364C54', fill = "#BCD2CB", level = 0.99) + theme_classic() + theme(legend.position = "none") + labs(x = 'Date', y = 'TANF Families Per Capita Scaled to 100,000', title = 'Generalized Additive Model Regression of TANF Families Per Capita Scaled to 100,000: \n 2001 - 2019') + theme(plot.title = element_text(hjust = 0.5)) + theme(plot.title = element_text(size=10)) 
+TANFPlot
+```
+
+```{r, warning = F, message = F, fig.height = 5, fig.width = 18}
+EmpPlot <- ggplot(data = final, mapping = aes(x = Date, y = unemp_rate, color = unemp_rate)) + geom_line() + theme_classic() + theme(legend.position = "none") + labs(x = 'Date', y = 'Unemployment Rate', title = 'Unemployment Rate: 2001 - 2019') + theme(plot.title = element_text(hjust = 0.5)) 
+
+FamPlot <- ggplot(data = final, mapping = aes(x = Date, y = scale_num_below_fpl)) + geom_line(color = 'darkgray') + stat_smooth(geom = 'line', method = 'lm', color = '#364C54', size = 2, alpha = 0.7) + theme_classic() + theme(legend.position = "none") + labs(x = 'Date', y = 'Number of Families Below Federal Poverty Level \n Scaled to 100,000', title = 'Number of Families Below Federal Poverty Level \n Scaled to 100,000: 2001 - 2019') + theme(plot.title = element_text(hjust = 0.5)) 
+
+grid.arrange(EmpPlot, FamPlot, nrow = 1, ncol = 2)
+```
+
+The unemployment rate across all states displays varying time trends, emphasized by a significant increase in unemployment rate under the Great Recession. The number of households below the federal poverty line per 100,000 state residents does not display a significant linear trend across the included states.
+
+To further define potential relationships within the data, a correlation heatmap is generated.
+
+```{r, fig.width = 10, warning = F, message = F}
+keep <- c('scale_tanf_fams', 'unemp_rate', 'scale_num_below_fpl')
+Data3 <- final[keep]
+colnames(Data3) <- c('TANF Families', 'Unemp. Rate', 'Families Below FPL')
+
+M <- cor(Data3)
+Correlation <- corrplot(M, method="circle", type = 'upper', col=colorRampPalette(c('navy', "lightblue", '#D7E8C4'))(200), addCoef.col = "black", tl.cex = 0.8, tl.col = 'black')
+```
+
+The correlation heatmap indicates that no issues of multicollinearity are present within the data: a general criterion for the presence of multicollinearity is an absolute correlation coefficient greater than 0.70 among two or more feature variables. A modest positive correlation of 0.25 is observed between the number of households on TANF per 100,000 state residents and unemployment rate. The correlation between the number of households on TANF per 100,000 state residents and the number of households below the federal poverty line per 100,000 state residents is -0.01, indicating that this variable likely does not contribute significant information for the prediction of the number of households on TANF per 100,000 state residents. This is most likely the result of the constant trend of the number of households below the federal poverty line over the considered time range.  
+
+# Identification of Policy States. 
+
+```{r}
+#Identify states by drug_law variable: 
+Policy <- final %>% filter(drug_law == 1)
+Policy_States <- unique(Policy$state)
+
+NoPol <- final %>% filter(drug_law == 0)
+NoPolicy_States <- unique(NoPol$state)
+
+#Function to clean and capitalize string variables: 
+CapStr <- function(y) {
+  c <- strsplit(y, " ")[[1]]
+  paste(toupper(substring(c, 1,1)), substring(c, 2),
+      sep="", collapse=" ")
+}
+
+#Read in U.S. state geographic data: 
+us_states <- map_data("state")
+us_states$region <- sapply(us_states$region, CapStr)
+
+#Identify policy states and save as a variable: 
+IndList <- c()
+for (i in us_states$region) {
+  if (i %in% Policy_States){
+    IndList <- c(IndList, 1)
+  }
+  else {
+    IndList <- c(IndList, 0)
+  }
+}
+
+us_states$drug_law <- as.factor(IndList)
+
+#Colors from Sam! #BCD2CB (blueish) and #364C54 (dark muted green/blue) and #D7E8C4 (green) and dark gray
+
+#Visualize: 
+p <- ggplot(data = us_states,
+            aes(x = long, y = lat,
+                group = group, fill = drug_law)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'State Drug Law Enaction') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'Policy Status', labels = c('No', 'Yes'), values = c('#D7E8C4', '#364C54'))
+p
+```
+
+# State Level Analysis. 
+
+### Case: Tennessee.
+
+Policy Date: 07/2014. 
+
+Control Region: Kentucky, South Carolina. 
+
+```{r}
+StatesList <- c('Tennessee', 'Kentucky', 'South Carolina')
+TC <- final %>% filter(state %in% StatesList)
+```
+
+```{r}
+TCTemp <- final %>% filter(state == 'Tennessee')
+CList <- c('Kentucky', 'South Carolina')
+cols <- c("Tennessee" = '#364C54', "Control Region" = "darkgray")
+TCCon <- final %>% filter(state %in% CList)
+PlotEmp <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = unemp_rate, color = 'Control Region')) + geom_line(data = TCTemp, mapping = aes(x = Date, y = unemp_rate, color = 'Tennessee'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'State Unemployment Rate', title = 'State Unemployment Rate Trend \n Tennessee and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)  
+
+PlotFam <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Control Region')) + geom_smooth(data = TCTemp, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Tennessee'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'Scaled Families below the FPL', title = 'Scaled Families below the FPL Trend \n Tennessee and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)
+```
+
+```{r, warning = F, message = F, fig.height = 3, fig.width = 12}
+PlotP <- ggplot() + geom_boxplot(data = TC, mapping = aes(y = scale_num_below_fpl, fill = state)) + theme_classic() + scale_fill_brewer(name = 'State', palette="Blues") + labs(y = 'Families Below the Federal Poverty Line \n Per Capita', title = 'Boxplot of Families Below the Federal Poverty Line Per Capita \n by State') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") 
+
+grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
+```
+
+(Left): State unemployment rate levels and trends are comparable across Tennessee and control states of Kentucky and South Carolina. A naive Welch Two Sample t-Test has a test statistic of -3.5411 and an associated p-value of 0.0004378, indicating that the there is sufficient evidence at any standard significance level to conclude that the means of the two samples are different. However, a Granger Causality Test has an F-test statistic of 5.0563 and an associated p-value of 0.007126, indicating that there is sufficient evidence at the $\alpha = 0.01$ level to conclude that the lagged unemployment rate within the control states provides information for the unemployment rate within Tennessee; that is, the time series are statistically comparable. (Right): The number of households below the federal poverty line per 100,000 state residents is consistently slightly higher within control states than within Tennessee. A naive Welch Two Sample t-Test has a test statistic of -9.3551 and an associated p-value of $< 2.2^{-16}$, indicating that there is sufficient evidence at any standard significance level to conclude that that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 3.5399 and an associated p-value of 0.06121, indicating that there is evidence at the $\alpha = 0.10$ significance level to conclude that the lagged number of households below the federal poverty line within the control states provides information for the number of households below the federal poverty line within Tennessee. Although these results are not overly robust, the treatment and control parallels are considered sufficient for variable matching within the context of the study as the time trends and the overall counts are relatively comparable.
+
+```{r}
+grangertest(TCCon$unemp_rate, TCTemp$unemp_rate, order = 2)
+grangertest(TCCon$scale_num_below_fpl, TCTemp$scale_num_below_fpl, order = 1)
+```
+
+
+```{r}
+t.test(TCTemp$unemp_rate, TCCon$unemp_rate)
+t.test(TCTemp$scale_num_below_fpl, TCCon$scale_num_below_fpl)
+```
+
+
+```{r}
+#Visualize TN and Controls geographically: 
+Region1Overall <- c('South Carolina', 'Kentucky')
+
+InterList <- c()
+for (i in us_states$region) {
+  if (i == 'Tennessee') {
+    InterList <- c(InterList, 1)
+  }
+  else if (i %in% Region1Overall) {
+    InterList <- c(InterList, 2)
+  }
+  else {
+    InterList <- c(InterList, 3)
+  }
+}
+
+us_states$TNRegion <- as.factor(InterList) 
+
+pTN <- ggplot(data = us_states,
+            aes(x = long, y = lat,
+                group = group, fill = TNRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'Tennessee and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('Tennessee', 'Control Region', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
+```
+
+```{r}
+R1 <- final %>% filter(state %in% Region1Overall) 
+
+TN <- final %>% filter(state == 'Tennessee') 
+
+#Define pre and post time periods by breakpoint: 
+TNPre <- TN %>% filter(Date <= '2014-07-01')
+ControlPre <- R1 %>% filter(Date <= '2014-07-01')
+
+TNPost <- TN %>% filter(Date >= '2014-10-01')
+ControlPost <- R1 %>% filter(Date >= '2014-10-01')
+```
+
+```{r, warning = F, message = F}
+#Visualize simple time trend of TANF families. 
+cols <- c("Tennessee" = '#364C54', "Control Region" = "#BCD2CB")
+RegInit <- ggplot() + stat_smooth(TNPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
+  color = "darkgray", size = 0.20, alpha = 0.75, 
+  method = "lm") + stat_smooth(TNPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Tennessee', group = 1),
+  color = "darkgray", size = 0.20, alpha = 0.75,   
+  method = "lm") + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
+  color = "darkgray", size = 0.20,
+  method = "lm"
+  ) + geom_vline(xintercept = as.Date('2014-07-01'), linetype="dashed", 
+                color = "black", size=0.50) + geom_vline(xintercept = as.Date('2014-10-01'), linetype="dashed", 
+                color = "black", size=0.50) + stat_smooth(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
+  color = "darkgray", size = 0.20, 
+  method = "lm"
+  ) + labs(x = 'Date', y = 'Scaled Number of Families on TANF', title = 'Linear Time Trends for Scaled Number of Families on TANF: \n Tennessee and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
+```
+
+```{r, fig.height = 3, fig.width = 12, warning = F, message = F}
+grid.arrange(pTN, RegInit, ncol = 2, nrow = 1)
+```
+
+Tennessee and the selected control states maintain parallel trends pertaining to the number of families on TANF prior to the date of policy enactment in Tennessee. Subsequent to the date of policy enactment, the trend pertaining to families on TANF in Tennessee exhibits an increased negative slope while a stable trend is maintained within the selected control states. 
+
+```{r}
+#Now, make a new dataframe with all relevant states: 
+StatesListTN <- c('Tennessee', 'South Carolina', 'Kentucky')
+TNData <- final %>% filter(state %in% StatesListTN)
+
+#Treatment/Control state indicator: 
+P <- c()
+for (k in TNData$state){
+  if (k == 'Tennessee') {
+    P <- c(P, 1)
+  }
+  else {
+    P <- c(P, 0)
+  }
+}
+
+TNData$Drug_Law <- as.factor(P)
+
+#Pre Post indicator: 
+PList1 <- c()
+Enact_Date <- as.Date('2014-07-01')
+for (i in TNData$Date){
+  if (i > Enact_Date){
+    PList1 <- c(PList1, 1)
+  }
+  else {
+    PList1 <- c(PList1, 0)
+  }
+}
+
+TNData$Post_Ind <- as.factor(PList1)
+TNData$state <- as.factor(TNData$state)
+```
+
+```{r, comment = ''}
+#Fixed Effects DID model: 
+TNReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = TNData)
+```
+
+## With lag.
+
+```{r}
+MonthsOmit <- c("2014-07-01", "2014-08-01", "2014-09-01", "2014-10-01", "2014-11-01", "2014-12-01")
+
+TNLag <- TNData %>% filter(!(TNData$datetime %in% MonthsOmit))
+```
+
+```{r, comment = ''}
+#Fixed Effects DID model WITH LAG: 
+TNRegLAG <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = TNLag)
+summary(TNRegLAG)
+```
+
+
+```{r, warning = F, message = F}
+# Preliminaries for table design. 
+robust.order <- c("drug_law1", "scale_num_below_fpl", "unemp_rate") 
+robust.label =  c( "Drug Law (1 = Yes/0 = No)",
+                   "Number Below Federal Poverty Level (per 100,000)",
+                   "Unemployment Rate (in %)")
+setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
+
+# Set up table with all three basic analyses components
+stargazer(TNReg, 
+          title="Table 2 (A). Policy Regression for Tennessee.", 
+          type = 'html', 
+          out = "table2(A).html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          order=paste0("^", robust.order , "$"), 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="",  
+          column.labels = c("Complete"),
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
+          "TANF rate scaled to 100,000 inhabitants."),
+          summary.stat=("n"))
+```
+```{r, warning = F, message = F}
+# Preliminaries for table design. 
+robust.order <- c("drug_law1", "scale_num_below_fpl", "unemp_rate") 
+robust.label =  c( "Drug Law (1 = Yes/0 = No)",
+                   "Number Below Federal Poverty Level (per 100,000)",
+                   "Unemployment Rate (in %)")
+setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
+
+# Set up table with all three basic analyses components
+stargazer(TNReg, TNRegLAG, 
+          title="Table 4 (A). Tennessee Model Regression with Robustness Checks.", 
+          type = 'html', 
+          out = "table4(A).html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          order=paste0("^", robust.order , "$"), 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="",  
+          column.labels = c("Complete", "With Lag"),
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
+          "TANF rate scaled to 100,000 inhabitants."),
+          summary.stat=("n"))
+```
+
+
+
+```{r, fig.height = 2.5, fig.width = 10, fig.align = 'center'}
+#Model diagnostics plots: 
+Fitted <- TNReg$fitted.values[,1]
+Res <- TNReg$residuals[,1]
+D <- data.frame(Fitted = Fitted, Residuals = Res)
+
+ThisPlot <- ggplot(data = D, mapping = aes(x = Fitted, y = Residuals)) + geom_point(color = '#364C54', alpha = 0.60) + geom_hline(yintercept = 0, color = 'darkred', linetype = 'dashed') + labs(x = 'Fitted', y = 'Residuals', title = 'Residuals vs. Fitted') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
+
+Res <- as.data.frame(Res)
+colnames(Res) <- c('Residual')
+
+QQ2 <- ggplot(Res, aes(sample = Residual)) + stat_qq(color = '#364C54', alpha = 0.60) + stat_qq_line(color = 'darkred') + labs(x = 'Theoretical', y= 'Sample', title = 'Normal Q-Q Plot') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
+
+grid.arrange(ThisPlot, QQ2, ncol = 2, nrow = 1)
+```
+
+(Left): To determine if the model exhibits constant variability of residuals, a residuals versus fitted plot is generated. In the plot, the fitted values of the model are plotted on the $x$ axis, and the residuals of the model are plotted on the $y$ axis. The fitted values generally form
+a horizontal band around the $residual = 0$ line, indicating overall constant variability of residuals. However, non-random trends are visible within the plot that indicate a linear model may not be fully appropriate for the data, and the residuals are large in absolute magnitude. (Right): To determine if the model has nearly normal residuals, a normal
+probability plot is generated. In the plot, the data are plotted by residuals generated from a theoretical normal
+distribution. The plot for the data follows a general linear trend, except in the tail areas of the
+distribution. The first points at the beginning of the range of the data fall below the line, while the
+last points at the end of the range of the data fall above the line. This indicates that the data exhibits thin tails. Further analysis may augment the data to explain more variability of the response variable.  
+
+### Case: Michigan. 
+
+Policy Date: 12/2014. 
+
+Control Region: Indiana, Illinois.
+
+```{r}
+TCTemp <- final %>% filter(state == 'Michigan')
+CList <- c('Indiana', 'Illinois')
+cols <- c("Michigan" = '#364C54', "Control Region" = "darkgray")
+TCCon <- final %>% filter(state %in% CList)
+PlotEmp <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = unemp_rate, color = 'Control Region')) + geom_line(data = TCTemp, mapping = aes(x = Date, y = unemp_rate, color = 'Michigan'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'State Unemployment Rate', title = 'State Unemployment Rate Trend \n Michigan and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)  
+
+PlotFam <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Control Region')) + geom_smooth(data = TCTemp, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Michigan'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'Scaled Families below the FPL', title = 'Scaled Families below the FPL Trend \n Michigan and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)
+```
+
+```{r, warning = F, message = F, fig.height = 3, fig.width = 12}
+grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
+```
+
+(Left): State unemployment rate levels and trends are relatively comparable across Michigan and control states of Indiana and Illinois, with deviation occurring within the years 2005 to 2010. A naive Welch Two Sample t-Test has a test statistic of 5.0126 and an associated p-value of $8.063^{-7}$, indicating that there is sufficient evidence at any standard significance level to conclude that the means of the two samples are different. A Granger Causality Test, however, has an F-test statistic of 13.615 and an associated p-value of $2.654^{-6}$, indicating that there is sufficient evidence at any standard significance level to conclude that the lagged unemployment rate within the control states provides information for the unemployment rate within Michigan. (Right): The number of households below the federal poverty line per 100,000 state residents is consistently slightly higher within Michigan than within control states. A naive Welch Two Sample t-Test has a test statistic of 11.64 and an associated p-value of $< 2.2^{-16}$, indicating that there is sufficient evidence at any standard level of significance to conclude that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 3.0203 and an associated p-value of 0.0836, indicating that there is evidence at the $\alpha = 0.10$ significance level to conclude that the lagged number of households below the federal poverty line within the control states provides information for the number of households below the federal poverty line within Michigan. Although these results are not overly robust, the treatment and control parallels are considered sufficient for variable matching within the context of the study as the time trends and the overall counts are relatively comparable.
+
+```{r, comment = ''}
+grangertest(TCCon$unemp_rate, TCTemp$unemp_rate, order = 2)
+grangertest(TCCon$scale_num_below_fpl, TCTemp$scale_num_below_fpl, order = 1)
+```
+
+```{r, comment = ''}
+t.test(TCTemp$unemp_rate, TCCon$unemp_rate)
+t.test(TCTemp$scale_num_below_fpl, TCCon$scale_num_below_fpl)
+```
+
+
+
+```{r}
+#Visualize Michigan and Controls geographically: 
+Region1Overall <- c('Indiana', 'Illinois')
+
+InterList <- c()
+for (i in us_states$region) {
+  if (i == 'Michigan') {
+    InterList <- c(InterList, 1)
+  }
+  else if (i %in% Region1Overall) {
+    InterList <- c(InterList, 2)
+  }
+  else {
+    InterList <- c(InterList, 3)
+  }
+}
+
+us_states$TNRegion <- as.factor(InterList) 
+
+pTN <- ggplot(data = us_states,
+            aes(x = long, y = lat,
+                group = group, fill = TNRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'Michigan and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('Michigan', 'Control Region', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
+```
+
+```{r}
+Region1Overall <- c('Indiana', 'Illinois')
+R1 <- final %>% filter(state %in% Region1Overall) 
+
+TN <- final %>% filter(state == 'Michigan') 
+
+#Define pre and post time periods by breakpoint: 
+TNPre <- TN %>% filter(Date <= '2014-12-01')
+ControlPre <- R1 %>% filter(Date <= '2014-12-01')
+
+TNPost <- TN %>% filter(Date >= '2015-02-01')
+ControlPost <- R1 %>% filter(Date >= '2015-02-01')
+```
+
+```{r, warning = F, message = F}
+#Visualize simple time trend of TANF families. 
+cols <- c("Michigan" = '#364C54', "Control Region" = "#BCD2CB")
+RegInit <- ggplot() + stat_smooth(TNPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Michigan', group = 1),
+  color = "darkgray", size = 0.20, alpha = 0.75, 
+  method = "lm") + stat_smooth(TNPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Michigan', group = 1),
+  color = "darkgray", size = 0.20, alpha = 0.75,   
+  method = "lm") + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
+  color = "darkgray", size = 0.20,
+  method = "lm"
+  ) + geom_vline(xintercept = as.Date('2014-12-01'), linetype="dashed", 
+                color = "black", size=0.50) + geom_vline(xintercept = as.Date('2015-02-01'), linetype="dashed", 
+                color = "black", size=0.50) + stat_smooth(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
+  color = "darkgray", size = 0.20, 
+  method = "lm"
+  ) + labs(x = 'Date', y = 'Scaled Number of Families on TANF', title = 'Linear Time Trends for Scaled Number of Families on TANF: \n Michigan and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
+```
+
+```{r, fig.height = 3, fig.width = 12, warning = F, message = F}
+grid.arrange(pTN, RegInit, ncol = 2, nrow = 1)
+```
+
+Michigan and the selected control states maintain parallel trends pertaining to the number of families on TANF prior to the date of policy enactment in Michigan. Subsequent to the date of policy enactment, the trend pertaining to families on TANF in Michigan exhibits a significant downwards shift with a similar slope. A relatively stable trend is maintained within the selected control states. 
+
+```{r}
+#Now, make a new dataframe with all relevant states: 
+StatesListTN <- c('Michigan', 'Indiana', 'Illinois')
+TNData <- final %>% filter(state %in% StatesListTN)
+
+#Treatment/Control state indicator: 
+P <- c()
+for (k in TNData$state){
+  if (k == 'Michigan') {
+    P <- c(P, 1)
+  }
+  else {
+    P <- c(P, 0)
+  }
+}
+
+TNData$Drug_Law <- as.factor(P)
+
+#Pre Post indicator: 
+PList1 <- c()
+Enact_Date <- as.Date('2014-12-01')
+for (i in TNData$Date){
+  if (i > Enact_Date){
+    PList1 <- c(PList1, 1)
+  }
+  else {
+    PList1 <- c(PList1, 0)
+  }
+}
+
+TNData$Post_Ind <- as.factor(PList1)
+TNData$state <- as.factor(TNData$state)
+```
+
+```{r, comment = ''}
+#Fixed Effects DID model: 
+MichiganReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = TNData)
+```
+
+## With lag.
+
+```{r}
+MonthsOmit2 <- c("2014-12-01", "2015-01-01", "2015-02-01", "2015-03-01", "2015-04-01", "2015-05-01")
+
+MichiganLag <- TNData %>% filter(!(TNData$datetime %in% MonthsOmit2))
+```
+
+```{r, comment = ''}
+#Fixed Effects DID model WITH LAG: 
+MichiganRegLAG <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = MichiganLag)
+summary(MichiganRegLAG)
+```
+
+
+```{r, warning = F, message = F}
+# Preliminaries for table design. 
+robust.order <- c("drug_law1", "scale_num_below_fpl", "unemp_rate") 
+robust.label =  c( "Drug Law (1 = Yes/0 = No)",
+                   "Number Below Federal Poverty Level (per 100,000)",
+                   "Unemployment Rate (in %)")
+setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
+
+# Set up table with all three basic analyses components
+stargazer(MichiganReg, 
+          title="Table 2 (B). Policy Regression for Michigan.", 
+          type = 'html', 
+          out = "table2(B).html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          order=paste0("^", robust.order , "$"), 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="",  
+          column.labels = c("Complete"),
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
+          "TANF rate scaled to 100,000 inhabitants."),
+          summary.stat=("n"))
+```
+```{r, warning = F, message = F}
+# Preliminaries for table design. 
+robust.order <- c("drug_law1", "scale_num_below_fpl", "unemp_rate") 
+robust.label =  c( "Drug Law (1 = Yes/0 = No)",
+                   "Number Below Federal Poverty Level (per 100,000)",
+                   "Unemployment Rate (in %)")
+setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
+
+# Set up table with all three basic analyses components
+stargazer(MichiganReg, MichiganRegLAG, 
+          title="Table 4 (B). Michigan Model Regression with Robustness Checks.", 
+          type = 'html', 
+          out = "table4(B).html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          order=paste0("^", robust.order , "$"), 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="",  
+          column.labels = c("Complete", "With Lag"),
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
+          "TANF rate scaled to 100,000 inhabitants."),
+          summary.stat=("n"))
+```
+
+
+```{r, fig.height = 2.5, fig.width = 10, fig.align = 'center'}
+#Model diagnostics plots: 
+Fitted <- MichiganReg$fitted.values[,1]
+Res <- MichiganReg$residuals[,1]
+D <- data.frame(Fitted = Fitted, Residuals = Res)
+
+ThisPlot <- ggplot(data = D, mapping = aes(x = Fitted, y = Residuals)) + geom_point(color = '#364C54', alpha = 0.60) + geom_hline(yintercept = 0, color = 'darkred', linetype = 'dashed') + labs(x = 'Fitted', y = 'Residuals', title = 'Residuals vs. Fitted') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
+
+Res <- as.data.frame(Res)
+colnames(Res) <- c('Residual')
+
+QQ2 <- ggplot(Res, aes(sample = Residual)) + stat_qq(color = '#364C54', alpha = 0.60) + stat_qq_line(color = 'darkred') + labs(x = 'Theoretical', y= 'Sample', title = 'Normal Q-Q Plot') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
+
+grid.arrange(ThisPlot, QQ2, ncol = 2, nrow = 1)
+```
+
+(Left): To determine if the model exhibits constant variability of residuals, a residuals versus fitted plot is generated. In the plot, the fitted values of the model are plotted on the $x$ axis, and the residuals of the model are plotted on the $y$ axis. The fitted values generally form
+a horizontal band around the $residual = 0$ line in the second half of the range of fitted values, but fail to do so in the first half of the range of fitted values. Furthermore, a non-random oscillating trend is visible within the plot that indicates a linear model may not be fully appropriate for the data, and the residuals are large in absolute magnitude. (Right): To determine if the model has nearly normal residuals, a normal
+probability plot is generated. In the plot, the data are plotted by residuals generated from a theoretical normal
+distribution. The plot for the data fails to follow a linear trend in the tail areas of the distribution, significantly deviating from the theoretical line. The first points at the beginning of the range of the data fall above the line, while the last points at the end of the range of the data fall below the line. This indicates that the data exhibits thin tails. Further analysis may augment the data to explain more variability of the response variable.
+
+### Case: Utah. 
+
+Policy Date: 03/2012. 
+
+Control Region: New Mexico, Montana. 
+
+```{r}
+TCTemp <- final %>% filter(state == 'Utah')
+CList <- c('New Mexico', 'Montana')
+cols <- c("Utah" = '#364C54', "Control Region" = "darkgray")
+TCCon <- final %>% filter(state %in% CList)
+PlotEmp <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = unemp_rate, color = 'Control Region')) + geom_line(data = TCTemp, mapping = aes(x = Date, y = unemp_rate, color = 'Utah'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'State Unemployment Rate', title = 'State Unemployment Rate Trend \n Utah and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)  
+
+PlotFam <- ggplot() + geom_line(data = TCCon, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Control Region')) + geom_smooth(data = TCTemp, mapping = aes(x = Date, y = scale_num_below_fpl, color = 'Utah'), size = 1, alpha = 0.8) + theme_classic() + labs(x = 'Date', y = 'Scaled Families below the FPL', title = 'Scaled Families below the FPL Trend \n Utah and Control States') + theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position="bottom") + scale_color_manual(name = 'State Group', values = cols)
+```
+
+```{r, warning = F, message = F, fig.height = 3, fig.width = 12}
+grid.arrange(PlotEmp, PlotFam, ncol = 2, nrow = 1)
+```
+
+(Left): State unemployment rate levels and trends are relatively comparable across Utah and control states of New Mexico and Montana, with increased variability occurring after the year 2010. A naive Welch Two Sample t-Test has a test statistic of -7.1137 and an associated p-value of $5.454^{-12}$, indicating that there is sufficient evidence at any standard level of significance to conclude that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 2.9399 and an associated p-value of 0.08812, indicating that there is sufficient evidence at the $\alpha = 0.10$ significance level to conclude that the lagged unemployment rate within the control states provides information for the unemployment rate within Utah. (Right): The number of households below the federal poverty line per 100,000 state residents is consistently higher within the control states than within Utah. A naive Welch Two Sample t-Test has a test statistic of -69.819 and an associated p-value of $< 2.2^{-16}$, indicating that there is sufficient evidence to conclude at any standard significance level that the means of the two samples are different. A Granger Causality Test has an F-test statistic of 0.8603 and an associated p-value of 0.3547, indicating that there is not sufficient evidence at any standard significance level to conclude that the lagged number of households below the federal poverty line within the control states provides information for the number of households below the federal poverty line within Utah. While the general treatment and control parallels are again considered sufficient for variable matching within the context of the study, more advanced matching methods may certainly be explored in further analysis.  
+
+```{r, comment = ''}
+grangertest(TCCon$unemp_rate, TCTemp$unemp_rate, order = 1)
+grangertest(TCCon$scale_num_below_fpl, TCTemp$scale_num_below_fpl, order = 1)
+```
+
+```{r, comment = ''}
+t.test(TCTemp$unemp_rate, TCCon$unemp_rate)
+t.test(TCTemp$scale_num_below_fpl, TCCon$scale_num_below_fpl)
+```
+
+```{r}
+#Visualize Utah and Controls geographically: 
+Region1Overall <- c('New Mexico', 'Montana')
+
+InterList <- c()
+for (i in us_states$region) {
+  if (i == 'Utah') {
+    InterList <- c(InterList, 1)
+  }
+  else if (i %in% Region1Overall) {
+    InterList <- c(InterList, 2)
+  }
+  else {
+    InterList <- c(InterList, 3)
+  }
+}
+
+us_states$UtahRegion <- as.factor(InterList) 
+
+pUtah <- ggplot(data = us_states,
+            aes(x = long, y = lat,
+                group = group, fill = UtahRegion)) + geom_polygon(color = "white", size = 0.20, alpha = 0.75) + coord_map() + labs(x = '', y = '', title = 'Utah and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name = 'State Group', labels = c('Utah', 'Control Region', 'Non-Control States'), values = c('#364C54', '#BCD2CB', 'darkgray'))
+```
+
+```{r}
+Region1 <- c('New Mexico', 'Montana')
+
+R1 <- final %>% filter(state %in% Region1) 
+
+WV <- final %>% filter(state == 'Utah')
+
+#Define Pre and Post data: 
+
+WVPre <- WV %>% filter(Date <= '2012-03-01')
+ControlPre <- R1 %>% filter(Date <= '2012-03-01')
+
+WVPost <- WV %>% filter(Date >= '2012-06-01')
+ControlPost <- R1 %>% filter(Date >= '2012-06-01')
+```
+
+
+```{r, message = F, warning = F}
+cols <- c("Utah" = '#364C54', "Control Region" = "#BCD2CB")
+RegInit <- ggplot() + stat_smooth(WVPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Utah', group = 1),
+  color = "darkgray", size = 0.20,
+  method = "lm") + stat_smooth(WVPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Utah', group = 1),
+  color = "darkgray", size = 0.20, 
+  method = "lm"
+  ) + stat_smooth(ControlPre, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
+  color = "darkgray", size = 0.20,
+  method = "lm"
+  ) + geom_vline(xintercept = as.Date('2012-03-01'), linetype="dashed", 
+                color = "black", size=0.50) + geom_vline(xintercept = as.Date('2012-06-01'), linetype="dashed", 
+                color = "black", size=0.50) + stat_smooth(ControlPost, mapping = aes(x = Date, y = scale_tanf_fams, fill = 'Control Region', group = 1),
+  color = "darkgray", size = 0.20, 
+  method = "lm"
+  ) + labs(x = 'Date', y = 'Scaled Number of Families on TANF', title = 'Linear Time Trends for Scaled Number of Families on TANF: \n Utah and Control Region') + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(name="State Group",values=cols)
+```
+
+```{r, fig.height = 3, fig.width = 12, warning = F, message = F}
+grid.arrange(pUtah, RegInit, ncol = 2, nrow = 1)
+```
+
+Utah and the selected control states maintain parallel trends pertaining to the number of families on TANF prior to the date of policy enactment in Utah. Subsequent to the date of policy enactment, the respective trends pertaining to families on TANF in Utah and the control states remain fairly consistent; the absolute magnitude of the regression slope pertaining to Utah appears to decrease slightly.  
+
+```{r}
+#Now, make a new dataframe with all relevant states: 
+StatesListUtah <- c('Utah', 'New Mexico', 'Montana')
+UtahData <- final %>% filter(state %in% StatesListUtah)
+
+#Treatment/Control state indicator: 
+P <- c()
+for (k in UtahData$state){
+  if (k == 'Utah') {
+    P <- c(P, 1)
+  }
+  else {
+    P <- c(P, 0)
+  }
+}
+
+UtahData$Drug_Law <- as.factor(P)
+
+#Pre Post indicator: 
+PList1 <- c()
+Enact_Date <- as.Date('2012-03-01')
+for (i in UtahData$Date){
+  if (i > Enact_Date){
+    PList1 <- c(PList1, 1)
+  }
+  else {
+    PList1 <- c(PList1, 0)
+  }
+}
+
+UtahData$Post_Ind <- as.factor(PList1)
+UtahData$state <- as.factor(UtahData$state)
+```
+
+```{r, comment = ''}
+#Fixed Effects DID model: 
+UtahReg <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = UtahData)
+
+summary(UtahReg)
+```
+
+## With lag.
+
+```{r}
+MonthsOmit3 <- c("2012-03-01", "2012-04-01", "2012-05-01", "2012-06-01", "2012-07-01", "2012-08-01")
+
+UtahLag <- UtahData %>% filter(!(UtahData$datetime %in% MonthsOmit3))
+```
+
+```{r, comment = ''}
+#Fixed Effects DID model WITH LAG: 
+UtahRegLAG <- felm(scale_tanf_fams ~ drug_law + scale_num_below_fpl + unemp_rate | year_cat + state, data = UtahLag)
+summary(UtahRegLAG)
+```
+
+```{r, warning = F, message = F}
+# Preliminaries for table design. 
+robust.order <- c("drug_law1", "scale_num_below_fpl", "unemp_rate") 
+robust.label =  c( "Drug Law (1 = Yes/0 = No)",
+                   "Number Below Federal Poverty Level (per 100,000)",
+                   "Unemployment Rate (in %)")
+setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
+
+# Set up table with all three basic analyses components
+stargazer(UtahReg, 
+          title="Table 2 (C). Policy Regression for Utah.", 
+          type = 'html', 
+          out = "table2(C).html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          order=paste0("^", robust.order , "$"), 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="",  
+          column.labels = c("Complete"),
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
+          "TANF rate scaled to 100,000 inhabitants."),
+          summary.stat=("n"))
+```
+```{r, warning = F, message = F}
+# Preliminaries for table design. 
+robust.order <- c("drug_law1", "scale_num_below_fpl", "unemp_rate") 
+robust.label =  c( "Drug Law (1 = Yes/0 = No)",
+                   "Number Below Federal Poverty Level (per 100,000)",
+                   "Unemployment Rate (in %)")
+setwd("C:/Users/lejac/OneDrive/Documents/Policy-Stats-Team/30_results")
+
+# Set up table with all three basic analyses components
+stargazer(UtahReg, UtahRegLAG, 
+          title="Table 4 (C). Utah Model Regression with Robustness Checks.", 
+          type = 'html', 
+          out = "table4(C).html",
+          omit.stat=c("f", "ser"),
+          style = "apsr", 
+          order=paste0("^", robust.order , "$"), 
+          digits=4, notes.align="l", 
+          notes.append=FALSE,
+          dep.var.labels ="",
+          notes.label="",  
+          column.labels = c("Complete", "With Lag"),
+          model.numbers=FALSE, 
+          covariate.labels =robust.label, 
+          notes=c("Standard errors given in parentheses.",
+          "<sup>&sstarf;&sstarf;&sstarf;</sup>p<0.01; <sup>&sstarf;&sstarf;</sup>p<0.05; <sup>&sstarf;</sup>p<0.1.",
+          "TANF rate scaled to 100,000 inhabitants."),
+          summary.stat=("n"))
+```
+
+```{r, fig.height = 2.5, fig.width = 10, fig.align = 'center'}
+#Model diagnostics plots: 
+Fitted <- UtahReg$fitted.values[,1]
+Res <- UtahReg$residuals[,1]
+D <- data.frame(Fitted = Fitted, Residuals = Res)
+
+ThisPlot <- ggplot(data = D, mapping = aes(x = Fitted, y = Residuals)) + geom_point(color = '#364C54', alpha = 0.60) + geom_hline(yintercept = 0, color = 'darkred', linetype = 'dashed') + labs(x = 'Fitted', y = 'Residuals', title = 'Residuals vs. Fitted') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
+
+Res <- as.data.frame(Res)
+colnames(Res) <- c('Residual')
+
+QQ2 <- ggplot(Res, aes(sample = Residual)) + stat_qq(color = '#364C54', alpha = 0.60) + stat_qq_line(color = 'darkred') + labs(x = 'Theoretical', y= 'Sample', title = 'Normal Q-Q Plot') + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
+
+grid.arrange(ThisPlot, QQ2, ncol = 2, nrow = 1)
+```
+
+(Left): To determine if the model exhibits constant variability of residuals, a residuals versus fitted plot is generated. In the plot, the fitted values of the model are plotted on the $x$ axis, and the residuals of the model are plotted on the $y$ axis. The fitted values generally form
+a horizontal band around the $residual = 0$ line, indicating overall constant variability of residuals. Many residuals are large in absolute magnitude. (Right): To determine if the model has nearly normal residuals, a normal probability plot is generated. In the plot, the data are plotted by residuals generated from a theoretical normal
+distribution. The plot for the data follows a general linear trend, with deviation occurring at the end of the range of the data as the points curve upwards. This may indicate right skew within the data. Further analysis may augment the data to explain more variability of the response variable.
+
+# Save
+
+```{r, comment = ''}
+print("done")
+```
