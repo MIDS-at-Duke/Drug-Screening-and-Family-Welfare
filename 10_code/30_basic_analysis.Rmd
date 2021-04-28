@@ -259,7 +259,7 @@ setwd("/Users/charlottekaiser/Documents/uni/DUKE | Sanford School/studies/Unifyi
 
 # Set up table with the two basic analyses components
 stargazer(basic, basic_rob2,
-          title="Table 1. Complete models", 
+          title="Table 1. Complete model", 
           type = 'html', 
           out = "table1.html",
           omit.stat=c("f", "ser"),
